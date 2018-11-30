@@ -2,6 +2,7 @@ package main;
 
 import static org.apache.spark.sql.functions.col;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,19 +21,19 @@ import static org.apache.spark.sql.functions.col;
 public class cl_process {
 
 //---------CONSTANTES---------//
-	final static String gv_table = "JSON00";
-	final static String gv_zkurl = "namenode.ambari.hadoop:2181:/hbase-unsecure";
+	final static String gc_table = "JSON00";
+	final static String gc_zkurl = "namenode.ambari.hadoop:2181:/hbase-unsecure";
 	
 	final static String gc_conn = "CONN";
 	final static String gc_dns  = "DNS";
 	final static String gc_http = "HTTP";
 	
-	final static String gc_stamp = "2018-11-31 11:47:30.000";
+	final static String gc_stamp = "2018-11-30 09:47:30.000";
 	
 	final static String gc_path_r = "/home/user/Documentos/batch_spark/";
 	
 //---------ATRIBUTOS---------//
-	private static cl_processa gv_processa;
+	private static cl_process gv_process;
 
 	private static Map<String, String> gv_phoenix;
 	
@@ -51,9 +52,9 @@ public class cl_process {
 	
 	public static void main(String[] args) throws AnalysisException {
 	
-		gv_processa = new cl_processa();
+		gv_process = new cl_process();
 		
-		gv_processa.m_start();
+		gv_process.m_start();
 	}
 	
 	public void m_start() throws AnalysisException {
@@ -87,11 +88,13 @@ public class cl_process {
 		
 		gv_phoenix = new HashMap<String, String>();
 		
-		gv_phoenix.put("zkUrl", gv_zkurl);
+		gv_phoenix.put("zkUrl", gc_zkurl);
 		gv_phoenix.put("hbase.zookeeper.quorum", "master");
-		gv_phoenix.put("table", gv_table);
+		gv_phoenix.put("table", gc_table);
 		
 		gv_conf = new SparkConf().setMaster("local[4]").setAppName("SelectLog");
+		
+		//gv_conf = new SparkConf().setAppName("ProcessBroLog");//se for executar no submit
 		
 		gv_context = new SparkContext(gv_conf);
 		
@@ -107,9 +110,10 @@ public class cl_process {
 			      .read()
 			      .format("org.apache.phoenix.spark")
 			      .options(gv_phoenix)							   
-			      //.load().sort("UID")
+			      .load()
+			      .sort("TS_CODE")
 			      //.filter("TIPO = 'CONN' OR TIPO = 'DNS'");//filter("TS_CODE = TO_TIMESTAMP ('"+gc_stamp+"')"); //" AND ( TIPO = 'CONN' OR TIPO = 'DNS' )");
-			      .filter(col("TS_CODE").ge(gc_stamp));
+			      .filter(col("TS_CODE").geq(gc_stamp));
 			      //.filter(col("TIPO").equalTo(gc_conn));*/
 							   
 		
@@ -362,47 +366,78 @@ public class cl_process {
 			      .format("org.apache.phoenix.spark")
 			      .options(gv_phoenix)							   
 			      .load()			      
-			      .filter(col("TS_CODE").ge(gc_stamp))
 			      .filter(col("TIPO").equalTo(gc_conn))
-				  .sort("TS_CODE");					   
-						
-		System.out.println("Conexões TOTAL: \t"+gt_data.count() + "\n\n");
+			      .filter(col("TS_CODE").gt(gc_stamp))			      
+				  .sort(col("TS_CODE").desc());					   
+		
+		//gt_data.show();
 		
 		Dataset<Row> lt_orig;	
 		
-		lt_orig = gv_data.groupBy("ID_ORIG_H",
-								  "ID_ORIG_P",
-								  "PROTO",
-								  "SERVICE")
-						 .sum("DURATION",
-							  "ORIG_BYTES",
-							  "RESP_BYTES");
-							  
-		Dataset<Row> lt_resp;	
+		lt_orig = gt_data.groupBy("ID_ORIG_H").count();
+								  //"ID_ORIG_P",
+								 //"PROTO",
+								  //"SERVICE").count();
+		System.out.println("Conexões TOTAL: \t"+ lt_orig.count() + "\n\n");
+		lt_orig.show();
 		
-		lt_resp = gv_data.groupBy("ID_RESP_H",
-								  "ID_RESP_P",
-								  "PROTO",
-								  "SERVICE")
-						 .sum("DURATION",
-							  "ORIG_BYTES",
-							  "RESP_BYTES");
+		/*System.out.println("Conexões TOTAL: \t"+ gt_data.count() + "\n\n");
+		
+			Dataset<Row> lt_orig;	
+		
+			lt_orig = gt_data.groupBy("ID_ORIG_H",
+									  //"ID_ORIG_P",
+									  "PROTO",
+									  "SERVICE")
+							 .sum("DURATION",
+								  "ORIG_BYTES",
+								  "RESP_BYTES");
+		
+			Date lv_time = new Date();
+			long lv_stamp = lv_time.getTime();	
+
+			lt_orig = lt_orig.select(col("ID_ORIG_H"),
+	                                // col("ID_ORIG_P"),
+	                                 col("PROTO"),
+	                                 col("SERVICE"),
+	                                 col("sum(DURATION)").as("DURATION"),
+					                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
+					                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
+			                 .withColumn("TS_CODE", functions.lit(lv_stamp));
 			
+			
+			m_save_log(lt_orig, "ORIG");*/			  
+			
+			/*Dataset<Row> lt_resp;	
+			
+			lt_resp = gt_data.groupBy("ID_RESP_H",
+									  //"ID_RESP_P",
+									  "PROTO",
+									  "SERVICE")
+							 .sum("DURATION",
+								  "ORIG_BYTES",
+								  "RESP_BYTES");
+			
+			lt_resp = lt_resp.select(col("ID_RESP_H"),
+	                                 //col("ID_RESP_P"),
+	                                 col("PROTO"),
+	                                 col("SERVICE"),
+	                                 col("sum(DURATION)").as("DURATION"),
+					                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
+					                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
+			                 .withColumn("TS_CODE", functions.lit(lv_stamp));
+			
+			m_save_log(lt_resp, "RESP");*/			
+		
 	}
 	
 	public static void m_save_log(Dataset<Row> lt_data, String lv_table) {
-	
-		Date lv_time = new Date();
-		long lv_stamp = lv_time.getTime();	
 		
-		lt_data = lt_data.select(col("sum(DURATION)").as("DURATION"));
-						 .withColumn("ts_result", functions.lit(lv_stamp));
-		
-		long lv_num = lv_json.count();			
+		long lv_num = lt_data.count();			
 			
 		if(lv_num > 0) {
 		
-			lv_json.write()
+			lt_data.write()
 				.format("org.apache.phoenix.spark")
 				.mode("overwrite")
 				.option("table", lv_table)
@@ -411,7 +446,10 @@ public class cl_process {
 				.save();
 		}
 		
-		System.out.println("LOG: "+ lv_tipo +" = "+ lv_num);
+		System.out.println("LOG: "+ lv_table +" = "+ lv_num);
+		
+		lt_data.printSchema();
+		lt_data.show();
 	
 	}
 }
