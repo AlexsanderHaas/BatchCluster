@@ -1,19 +1,10 @@
 package main;
 
 import static org.apache.spark.sql.functions.col;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.AnalysisException;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 
 import static org.apache.spark.sql.functions.col;
@@ -21,232 +12,71 @@ import static org.apache.spark.sql.functions.col;
 public class cl_process {
 
 //---------CONSTANTES---------//
-	final static String gc_table = "JSON00";
-	final static String gc_zkurl = "namenode.ambari.hadoop:2181:/hbase-unsecure";
+		
+	final static String gc_conn_ip = "CONN_IP1";	
+	
+	final static String gc_totais = "LOG_TOTAIS";
 	
 	final static String gc_conn = "CONN";
 	final static String gc_dns  = "DNS";
 	final static String gc_http = "HTTP";
 	
-	final static String gc_stamp = "2018-11-30 09:47:30.000";
+//------------------Colunas------------------------//
 	
-	final static String gc_path_r = "/home/user/Documentos/batch_spark/";
+	final static String gc_proto 		= "PROTO";
+	final static String gc_service		= "SERVICE";
+	final static String gc_orig_h		= "ID_ORIG_H";
+	final static String gc_orig_p		= "ID_ORIG_P";
+	final static String gc_resp_h		= "ID_RESP_H";
+	final static String gc_resp_p		= "ID_RESP_P";
+	
+	final static String gc_duration     = "DURATION";
+	final static String gc_orig_pkts    = "ORIG_PKTS";
+	final static String gc_orig_bytes   = "ORIG_BYTES";
+	final static String gc_resp_pkts	= "RESP_PKTS";
+	final static String gc_resp_bytes   = "RESP_BYTES";						
 	
 //---------ATRIBUTOS---------//
-	private static cl_process gv_process;
-
-	private static Map<String, String> gv_phoenix;
 	
-	private static SparkConf gv_conf;
-    
-	private static SparkContext gv_context;
-	                        
-	private static SparkSession gv_session;
+	private cl_seleciona go_select;
 	
-	private static int gv_batch = 2;
+	private long gv_stamp_filtro; //Filtro da seleção de dados
 	
-	private Dataset<Row> gt_data;	
-	private Dataset<Row> gt_conn;
-	private Dataset<Row> gt_dns;
-	private Dataset<Row> gt_http;
+	private long gv_stamp; //Stamp do inicio da execução
 	
-	public static void main(String[] args) throws AnalysisException {
-	
-		gv_process = new cl_process();
+	public cl_process(String lv_filtro, long lv_stamp){
 		
-		gv_process.m_start();
-	}
-	
-	public void m_start() throws AnalysisException {
-						
-		m_conecta_phoenix();
-
-		switch(gv_batch){
-
-			case 1:
-				
-				m_seleciona();
+		java.sql.Timestamp lv_ts = java.sql.Timestamp.valueOf( lv_filtro ) ;
 		
-				if(gt_data.count() > 0) {
-				
-					m_processa();
+		gv_stamp_filtro = lv_ts.getTime(); 
 		
-				}
-				
-				break;
-			
-			case 2:
-			
-				m_seleciona_conn();
-			
-		}
-				
-	}
-	
-	///-----------CASE 1 - Normal-----------////
-	public static void m_conecta_phoenix(){
-		
-		gv_phoenix = new HashMap<String, String>();
-		
-		gv_phoenix.put("zkUrl", gc_zkurl);
-		gv_phoenix.put("hbase.zookeeper.quorum", "master");
-		gv_phoenix.put("table", gc_table);
-		
-		gv_conf = new SparkConf().setMaster("local[4]").setAppName("SelectLog");
-		
-		//gv_conf = new SparkConf().setAppName("ProcessBroLog");//se for executar no submit
-		
-		gv_context = new SparkContext(gv_conf);
-		
-		gv_session = new SparkSession(gv_context);		
-		
-		Logger.getRootLogger().setLevel(Level.ERROR);
-	}
-	
-	public void m_seleciona() throws AnalysisException {
-		
-		gt_data = gv_session
-			      .sqlContext()
-			      .read()
-			      .format("org.apache.phoenix.spark")
-			      .options(gv_phoenix)							   
-			      .load()
-			      .sort("TS_CODE")
-			      //.filter("TIPO = 'CONN' OR TIPO = 'DNS'");//filter("TS_CODE = TO_TIMESTAMP ('"+gc_stamp+"')"); //" AND ( TIPO = 'CONN' OR TIPO = 'DNS' )");
-			      .filter(col("TS_CODE").geq(gc_stamp));
-			      //.filter(col("TIPO").equalTo(gc_conn));*/
-							   
-		
-		//lv_data.createOrReplaceTempView(gv_table); //cria uma tabela temporaria, para acessar via SQL
-		
-		System.out.println("Conexões TOTAL: \t"+gt_data.count() + "\n\n");
-				
-	}
-	
-	public void m_processa() throws AnalysisException {
-				
-		gt_conn = m_processa_conn(gt_data);
-		
-		//m_save_csv(gt_conn, "CONN-ALL");
-
-		//m_show_dataset(gt_conn,"CONN-ALL");
-		
-		/*gt_dns = m_processa_dns(gt_data);
-		m_save_csv(gt_dns, "DNS-ALL");
-		
-		gt_http = m_processa_http(gt_data);
-		m_save_csv(gt_http, "HTTP-ALL");
-		
-		m_get_www_info();*/ //Exporta totais da conexão por filtro de WWW
-		
-
-	}
-	
-	public Dataset<Row> m_processa_conn(Dataset<Row> lv_data) throws AnalysisException {
-		
-		Dataset<Row> lt_conn;	
-		
-		lt_conn = lv_data
-				  .select("TIPO",              
-						  "TS_CODE",  								   	
-						  "TS",         
-						  "UID",
-						  "ID_ORIG_H",
-						  "ID_ORIG_P",  
-						  "ID_RESP_H",  
-						  "ID_RESP_P",  
-						  "PROTO",
-						  "SERVICE",	
-						  "DURATION",  
-						  "ORIG_BYTES",
-						  "RESP_BYTES",
-						  "CONN_STATE",
-						  "LOCAL_ORIG",
-						  "LOCAL_RESP",
-						  "MISSED_BYTES",	
-						  "HISTORY",		
-						  "ORIG_PKTS",		
-						  "ORIG_IP_BYTES",	
-						  "RESP_PKTS",		
-						  "RESP_IP_BYTES"  
-						 // "TUNNEL_PARENTS"
-						  )				  
-				  .filter(col("TIPO").equalTo(gc_conn)).limit(10000);
-				  		
-		m_show_dataset(lt_conn,"Conexões CONN:");
-		
-		return lt_conn;										
+		gv_stamp = lv_stamp;
 		
 	}
 	
-	public Dataset<Row> m_processa_dns(Dataset<Row> lv_data) {
+	///-----------CASE 1 - Normal-----------////	
+	
+	public void m_get_all(Dataset<Row> lt_data) throws AnalysisException {
+		
+		Dataset<Row> lt_conn; 
+		Dataset<Row> lt_dns;  
+		Dataset<Row> lt_http; 
+		             
+		lt_conn = go_select.m_get_conn(lt_data);
+		
+		cl_util.m_save_csv(lt_conn, "CONN-ALL");
 
-		Dataset<Row> lt_dns;
+		cl_util.m_show_dataset(lt_conn,"CONN-ALL");
 		
-		lt_dns = lv_data
-				.select("TIPO",              
-						"TS_CODE",  								   	
-						"TS",         
-						"UID",
-						"ID_ORIG_H",
-						"ID_ORIG_P",  
-						"ID_RESP_H",  
-						"ID_RESP_P",  
-						"PROTO",
-						"TRANS_ID",	
-						"QUERY",  		
-						"QCLASS", 		
-						"QCLASS_NAME",
-						"QTYPE", 		
-						"QTYPE_NAME", 
-						"RCODE",   	
-						"RCODE_NAME", 
-						"AA", 			
-						"TC",			
-						"RD",			
-						"RA",			
-						"Z",			
-						//"ANSWERS",		
-						//"TTLS",		
-						"REJECTED"  
-						)
-				.filter(col("TIPO").equalTo(gc_dns)).limit(10000);
-								
-		m_show_dataset(lt_dns,"Conexões DNS:");
+		lt_dns = go_select.m_get_dns(lt_data);
 		
-		return lt_dns;		
+		cl_util.m_save_csv(lt_dns, "DNS-ALL");
 		
-	}
-			
-	public Dataset<Row> m_processa_http(Dataset<Row> lv_data) {
-
-		Dataset<Row> lt_http;
-
-		lt_http = lv_data
-				  .select("TIPO",              
-						"TS_CODE",  								   	
-						"TS",         
-						"UID",
-						"ID_ORIG_H",
-						"ID_ORIG_P",  
-						"ID_RESP_H",  
-						"ID_RESP_P",  
-						"PROTO",
-						"TRANS_DEPTH",  	
-						"VERSION",      	
-						"REQUEST_BODY_LEN",
-						"RESPONSE_BODY_LEN",
-						"STATUS_CODE",	
-						"STATUS_MSG"		 
-						//"TAGS",			
-						//"RESP_FUIDS",		 
-						//"RESP_MIME_TYPES" 
-						  )
-				  .filter(col("TIPO").equalTo(gc_http)).limit(10000);					
+		lt_http = go_select.m_get_http(lt_data);
 		
-		m_show_dataset(lt_http,"Conexões HTTP:");
+		cl_util.m_save_csv(lt_http, "HTTP-ALL");
 		
-		return lt_http;
+		m_get_www_info(lt_conn, lt_dns); //Exporta totais da conexão por filtro de WWW
 		
 	}
 	
@@ -260,13 +90,13 @@ public class cl_process {
 
 	}
 
-	public void m_get_www_info() {
+	public void m_get_www_info(Dataset<Row> lt_conn, Dataset<Row> lt_dns) {
 		
 		Dataset<Row> lt_query;
 		
-		lt_query = m_dns_query(gt_dns);
+		lt_query = m_dns_query(lt_dns);
 
-		m_get_conn_query(gt_conn, lt_query);
+		m_get_conn_query(lt_conn, lt_query);
 
 	}
 	
@@ -289,7 +119,7 @@ public class cl_process {
 
 		//m_save_csv(lv_res, "DNS-WWW");
 
-		m_show_dataset(lv_res,"DNS-WWW");
+		cl_util.m_show_dataset(lv_res,"DNS-WWW");
 
 		return lv_res;
 
@@ -316,9 +146,9 @@ public class cl_process {
 				   .distinct()				   
 				   .sort(col("ORIG_BYTES").desc());
 				   						
-		m_show_dataset(lv_res,"CONN por DNS-QUERY");
+		cl_util.m_show_dataset(lv_res,"CONN por DNS-QUERY");
 				
-		m_save_csv(lv_res, "CONN-WWW");
+		cl_util.m_save_csv(lv_res, "CONN-WWW");
 		
 		lv_res = lv_res.groupBy("QUERY")
 				.sum("DURATION",
@@ -327,129 +157,266 @@ public class cl_process {
 				.sort(col("sum(RESP_BYTES)").desc());
 		
 		
-		m_show_dataset(lv_res, "Totais de CONN por DNS-QUERY");
+		cl_util.m_show_dataset(lv_res, "Totais de CONN por DNS-QUERY");
 		
-		m_save_csv(lv_res, "CONN-WWW-SUM");	
-		
-	}
-	
-	public void m_show_dataset(Dataset<Row> lv_data, String lv_desc) {
-		
-		System.out.println("\nConexões - " + lv_desc + "\t" + lv_data.count());
-		
-		lv_data.printSchema();
-		
-		lv_data.show();
-						
-	}
-	
-	public void m_save_csv(Dataset<Row> lv_data, String lv_dir){
-		
-		String lv_path = gc_path_r + lv_dir;
-		
-		lv_data.coalesce(1) //cria apenas um arquivo
-	      .write()
-	      .option("header", "true")
-	      .mode("overwrite") //substitui o arquivo de resultado pelo novo			
-	      //.json(lv_path);
-	      .csv(lv_path);
+		cl_util.m_save_csv(lv_res, "CONN-WWW-SUM");	
 		
 	}
-
-	///-----------CASE 2 - Conexões-----------////
 	
-	public void m_seleciona_conn(){
+	///-----------CASE 2 - Conexões-----------////	
 	
-		gt_data = gv_session
-			      .sqlContext()
-			      .read()
-			      .format("org.apache.phoenix.spark")
-			      .options(gv_phoenix)							   
-			      .load()			      
-			      .filter(col("TIPO").equalTo(gc_conn))
-			      .filter(col("TS_CODE").gt(gc_stamp))			      
-				  .sort(col("TS_CODE").desc());					   
+	public void m_process_orig(Dataset<Row> lt_orig, long lv_stamp) {	
 		
-		//gt_data.show();
-		
-		Dataset<Row> lt_orig;	
-		
-		lt_orig = gt_data.groupBy("ID_ORIG_H").count();
+		lt_orig = lt_orig.groupBy("ID_ORIG_H",
 								  //"ID_ORIG_P",
-								 //"PROTO",
-								  //"SERVICE").count();
-		System.out.println("Conexões TOTAL: \t"+ lt_orig.count() + "\n\n");
-		lt_orig.show();
+								  "PROTO",
+								  "SERVICE")
+						 .sum("DURATION",
+							  "ORIG_BYTES",
+							  "RESP_BYTES");
 		
-		/*System.out.println("Conexões TOTAL: \t"+ gt_data.count() + "\n\n");
+		lt_orig = lt_orig.select(col("ID_ORIG_H"),
+                                // col("ID_ORIG_P"),
+                                 col("PROTO"),
+                                 col("SERVICE"),
+                                 col("sum(DURATION)").as("DURATION"),
+				                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
+				                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
+		                 .withColumn("TS_CODE", functions.lit(lv_stamp));
+				
+		cl_util.m_save_log(lt_orig, gc_conn_ip);	
 		
-			Dataset<Row> lt_orig;	
+		cl_util.m_show_dataset(lt_orig, "Totais de CONN ORIGEM:");
 		
-			lt_orig = gt_data.groupBy("ID_ORIG_H",
-									  //"ID_ORIG_P",
-									  "PROTO",
-									  "SERVICE")
-							 .sum("DURATION",
-								  "ORIG_BYTES",
-								  "RESP_BYTES");
+	}
+	
+	public void m_process_resp(Dataset<Row> lt_resp, long lv_stamp) {
+				
+		lt_resp = lt_resp.groupBy("ID_RESP_H",
+								  //"ID_RESP_P",
+								  "PROTO",
+								  "SERVICE")
+						 .sum("DURATION",
+							  "ORIG_BYTES",
+							  "RESP_BYTES");
 		
-			Date lv_time = new Date();
-			long lv_stamp = lv_time.getTime();	
+		lt_resp = lt_resp.select(col("ID_RESP_H"),
+                               //col("ID_RESP_P"),
+                               col("PROTO"),
+                               col("SERVICE"),
+                               col("sum(DURATION)").as("DURATION"),
+				               col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
+				               col("sum(RESP_BYTES)").as("RESP_BYTES"))
+		                 .withColumn("TS_CODE", functions.lit(lv_stamp));
+		
+		cl_util.m_save_log(lt_resp, gc_conn_ip);			
+		
+		cl_util.m_show_dataset(lt_resp, "Totais de CONN RESPOSTA:");
+		
+	}
+		
+	
+	///-----------CASE 4 - TOTAIS-----------////
 
-			lt_orig = lt_orig.select(col("ID_ORIG_H"),
-	                                // col("ID_ORIG_P"),
-	                                 col("PROTO"),
-	                                 col("SERVICE"),
-	                                 col("sum(DURATION)").as("DURATION"),
-					                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
-					                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
-			                 .withColumn("TS_CODE", functions.lit(lv_stamp));
-			
-			
-			m_save_log(lt_orig, "ORIG");*/			  
-			
-			/*Dataset<Row> lt_resp;	
-			
-			lt_resp = gt_data.groupBy("ID_RESP_H",
-									  //"ID_RESP_P",
-									  "PROTO",
-									  "SERVICE")
-							 .sum("DURATION",
-								  "ORIG_BYTES",
-								  "RESP_BYTES");
-			
-			lt_resp = lt_resp.select(col("ID_RESP_H"),
-	                                 //col("ID_RESP_P"),
-	                                 col("PROTO"),
-	                                 col("SERVICE"),
-	                                 col("sum(DURATION)").as("DURATION"),
-					                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
-					                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
-			                 .withColumn("TS_CODE", functions.lit(lv_stamp));
-			
-			m_save_log(lt_resp, "RESP");*/			
+	public void m_process_totais(Dataset<Row> lt_data) {
+		
+		Dataset<Row> lt_total;
+		
+		/*lt_total = gt_data.groupBy("PROTO",
+							  "ID_ORIG_H",
+							  "ID_ORIG_P",
+							  "ID_RESP_H",							  
+						      "ID_RESP_P")					     
+						 .sum("DURATION",
+							  "ORIG_PKTS",
+							  "ORIG_BYTES",
+							  "RESP_PKTS",
+							  "RESP_BYTES");*/
+		
+		/*gt_data.groupBy("PROTO")
+			   .count().show();
+		
+		gt_data.groupBy("PROTO",
+				        "SERVICE")
+			   .count().show();*/
+		
+		/*lt_total = gt_data.groupBy("ID_ORIG_H")				  			     
+			 .sum("DURATION",
+				  "ORIG_PKTS",
+				  "ORIG_BYTES",
+				  "RESP_PKTS",
+				  "RESP_BYTES");*/
+		
+		lt_total = lt_data//.filter(col("SERVICE").equalTo("http"))
+						  .filter(col("ID_ORIG_H").equalTo("192.168.10.50"))
+						  .groupBy("ID_ORIG_H",
+				                   //"ID_ORIG_P",
+				                   "ID_RESP_H",							  
+			                       "ID_RESP_P")				 		  
+						  .count();
+				 
+		
+		lt_total.sort(col("COUNT").desc()).show(200);
+		
+		/*lt_total = gt_data.groupBy("PROTO",
+				  "SERVICE")				  			     
+			 .sum("DURATION",
+				  "ORIG_PKTS",
+				  "ORIG_BYTES",
+				  "RESP_PKTS",
+				  "RESP_BYTES");
+		
+		m_save_csv(lt_total, "CONN_TOTAIS" );*/
 		
 	}
+
 	
-	public static void m_save_log(Dataset<Row> lt_data, String lv_table) {
-		
-		long lv_num = lt_data.count();			
-			
-		if(lv_num > 0) {
-		
-			lt_data.write()
-				.format("org.apache.phoenix.spark")
-				.mode("overwrite")
-				.option("table", lv_table)
-				.option("zkUrl", gc_zkurl)
-				.option("autocommit", "true")
-				.save();
-		}
-		
-		System.out.println("LOG: "+ lv_table +" = "+ lv_num);
-		
-		lt_data.printSchema();
-		lt_data.show();
+	///-----------CASE 5 - Análises-----------////		
 	
+	public void m_start_analyzes(Dataset<Row> lt_data) {
+		
+		final String lc_proto 		     = "PROTO";
+		final String lc_service 	     = "SERVICE";
+		final String lc_orig_h	 	     = "ORIG_H";
+		final String lc_orig_p	 	     = "ORIG_P";
+		final String lc_orig_h_p	     = "ORIG_H_P";
+		final String lc_orig_h_proto	 = "ORIG_H_PROTO";
+		final String lc_orig_h_service	 = "ORIG_H_SERVICE";
+		final String lc_orig_h_p_resp_h  = "ORIG_H_P_RESP_H";
+		
+		final String lc_resp_h	 	     = "RESP_H";
+		final String lc_resp_p	 	     = "RESP_P";
+		final String lc_resp_h_p	     = "RESP_H_P";
+		final String lc_resp_h_proto	 = "RESP_H_PROTO";
+		final String lc_resp_h_service	 = "RESP_H_SERVICE";
+		final String lc_resp_h_p_orig_h  = "RESP_H_P_ORIG_H";
+		
+		final String lc_orig_h_resp_h 	  = "ORIG_H_RESP_H";
+		final String lc_orig_h_p_resp_h_p = "ORIG_H_P_RESP_H_P";
+		
+		String lc_v = ", ";
+		
+		String lv_group;
+				
+//-----------Conexões por PROTOCOLO--------------------------------------//
+				
+		
+		m_group_sum(lt_data, gc_proto, lc_proto, "Conexões por Protocolo");
+		
+//-----------Conexões por SERVIÇO--------------------------------------//
+		
+		m_group_sum(lt_data, gc_service, lc_service, "Conexões por Serviço");	
+		
+//-----------Conexões IP Origem--------------------------------------//
+		
+		m_group_sum(lt_data, gc_orig_h, lc_orig_h, "Conexões por IP Origem");
+						
+		m_group_sum(lt_data, gc_orig_p, lc_orig_p,"Conexões por Portas Origem");	
+				
+		lv_group = gc_orig_h + lc_v + gc_orig_p; 
+				
+		m_group_sum(lt_data, lv_group, lc_orig_h_p, "Conexões por IP e Porta Origem");
+				
+		lv_group = gc_orig_h + lc_v + gc_proto;
+		
+		m_group_sum(lt_data, lv_group, lc_orig_h_proto, "Conexões por IP Origem e Protocolo");				
+		
+		lv_group = gc_orig_h + lc_v + gc_service;
+		
+		m_group_sum(lt_data, lv_group, lc_orig_h_service, "Conexões por IP Origem e Serviço");
+								
+		lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h;
+		
+		m_group_sum(lt_data, lv_group, lc_orig_h_p_resp_h,"Conexões por IP Origem e Porta com IP Resposta");
+		
+		
+//-----------Conexões IP Resposta--------------------------------------//
+		
+		m_group_sum(lt_data, gc_resp_h, lc_resp_h, "Conexões por IP Resposta");
+		
+		m_group_sum(lt_data, gc_resp_p, lc_resp_p, "Conexões por Portas Resposta");
+		
+		lv_group = gc_resp_h + lc_v + gc_resp_p;
+		
+		m_group_sum(lt_data, lv_group, lc_resp_h_p, "Conexões por IP e Porta Resposta");
+		
+		lv_group = gc_resp_h + lc_v + gc_proto;
+		
+		m_group_sum(lt_data, lv_group, lc_resp_h_proto, "Conexões por IP Resposta e Protocolo");		
+		
+		lv_group = gc_resp_h + lc_v + gc_service;
+		
+		m_group_sum(lt_data, lv_group, lc_resp_h_service, "Conexões por IP Resposta e Serviço");
+		
+		lv_group = gc_resp_h + lc_v + gc_resp_p + lc_v + gc_orig_h;
+		
+		m_group_sum(lt_data, lv_group, lc_resp_h_p_orig_h, "Conexões por IP Resposta e Porta com IP Origem");
+		
+//-----------Conexões IP Origem com IP Resposta--------------------------------------//
+		
+		lv_group = gc_orig_h + lc_v + gc_resp_h;
+		
+		m_group_sum(lt_data, lv_group, lc_orig_h_resp_h, "Conexões por IP Origem e IP Resposta");		
+		
+		lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h + lc_v + gc_resp_p;
+		
+		m_group_sum(lt_data, lv_group, lc_orig_h_p_resp_h_p, "Conexões por IP Origem e Porta com IP Resposta e Porta");
+		
 	}
+		
+	public void m_group_sum(Dataset<Row> lt_data, 									
+						    String   lv_group, 
+						    String   lv_tipo,
+						    String   lv_desc) {
+		
+		final String lc_table = "LOG"; 
+		
+		final String lc_duration     = "SUM(DURATION) AS DURATION, ";
+		final String lc_orig_pkts    = "SUM(ORIG_PKTS) AS ORIG_PKTS, ";
+		final String lc_orig_bytes   = "SUM(ORIG_BYTES) AS ORIG_BYTES, ";
+		final String lc_resp_pkts	 = "SUM(RESP_PKTS) AS RESP_PKTS, ";
+		final String lc_resp_bytes   = "SUM(RESP_BYTES) AS RESP_BYTES ";	
+		
+		final String lv_sum = lc_duration   + 
+							  lc_orig_pkts  + 
+							  lc_orig_bytes +
+							  lc_resp_pkts  +
+							  lc_resp_bytes;
+		
+		String lv_grp = lv_group + ", COUNT(*) AS COUNT, ";
+		
+		String lv_sql = "SELECT " +
+						lv_grp    +
+						lv_sum    +
+						"FROM "   + lc_table +
+						" GROUP BY "+ lv_group;
+		
+		Dataset<Row> lt_res;
+		
+		long lv_i = System.currentTimeMillis();  
+				
+		lv_i = System.currentTimeMillis();  			
+		
+		lt_data.createOrReplaceTempView("LOG"); //cria uma tabela temporaria, para acessar via SQL				
+			
+		//System.out.println("SQL: "+lv_sql);
+				
+		lt_res = lt_data.sparkSession()
+						  .sql(lv_sql);	
+		
+		lt_res = lt_res.withColumn("TIPO", functions.lit(lv_tipo))
+				       .withColumn("TS_FILTRO", functions.lit(gv_stamp_filtro))						   
+				       .withColumn("TS_CODE", functions.lit(gv_stamp))
+				       .withColumn("ROW_ID", functions.monotonically_increasing_id());
+		
+		cl_util.m_show_dataset(lt_res, lv_desc + "-RES:");
+		
+		cl_util.m_save_log(lt_res, gc_totais);
+		
+		long lv_f = ( System.currentTimeMillis() - lv_i ) / 1000;
+		
+		System.out.println("Tipo-"+lv_tipo+" : A função foi executada em:\t" + lv_f +" Segundos");
+			
+	}
+	
 }
