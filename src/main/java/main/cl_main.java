@@ -11,25 +11,48 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
+import IpInfo.cl_pesquisa_ip;
+
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.date_format;
+
 public class cl_main {
 	
 	//---------CONSTANTES---------//
 	
-	final static String gc_table = "JSON00";
+	final static String gc_table 		= "LOG";
 	
-	final static String gc_conn_ip = "CONN_IP1";
+	final static String gc_kmeans_ddos 	= "LOG_KMEANS_DDOS";
 	
-	final static String gc_stamp = "2018-11-30 09:47:30.000"; //por aqui ele considera o GMT -2 e no SQL no CMD é sem GMT
+	final static String gc_kmeans_scan 	= "LOG_KMEANS_SCAN_PORT";
+	
+	final static String gc_totais 	    = "LOG_TOTAIS";
+	
+	final static String gc_conn_ip 		= "CONN_IP1";
+	
+	final static String gc_stamp 		= "2018-12-02 21:57:00.000"; //por aqui ele considera o GMT -2 e no SQL no CMD é sem GMT
+	
+	final static String gc_http 		= "http";
+	
+	final static String gc_ssl 			= "ssl";
+	
+	final static String gc_ssh 			= "ssh";
+	
+	final static String gc_tcp 			= "tcp";
+	
+	final static String gc_udp 			= "udp";
+	
+	final static String gc_ts 			= "TS";
 	
 	//---------ATRIBUTOS---------//
 	
-	private long gv_stamp;
+	public long gv_stamp;
 	
 	private Date gv_time = new Date();
 	
-	private static int gv_submit = 1; //1=Cluster 
+	private static int gv_submit = 0; //1=Cluster 
 	
-	private static int gv_batch = 5;
+	private static int gv_batch = 8;
 	
 	private Dataset<Row> gt_data;
 	
@@ -37,7 +60,7 @@ public class cl_main {
     
 	private static SparkContext gv_context;
 	                        
-	private static SparkSession gv_session;
+	public static SparkSession gv_session;
 	
 	//---------ATRIBUTOS-CLASSES---------//
 	
@@ -45,8 +68,10 @@ public class cl_main {
 	
 	private cl_process go_processa;
 	
-	private cl_seleciona go_select;
-		
+	private cl_seleciona go_select;				
+	
+	//---------METODOS---------//
+	
 	public static void main(String[] args) throws AnalysisException {
 		
 		gv_main = new cl_main();
@@ -63,13 +88,15 @@ public class cl_main {
 		
 		go_select = new cl_seleciona();
 		
-		go_processa = new cl_process(gc_stamp, gv_stamp);							
+		go_processa = new cl_process(gc_stamp, gv_stamp);		
+		
+		cl_kmeans lo_kmeans;
 		
 		switch(gv_batch){
 
 		case 1: //SALVA todos os dados em CSV CONN, DNS e HTTP
 			
-			go_select.m_conf_phoenix(gc_table, "GERAL", gv_session);
+			go_select.m_conf_phoenix(gc_table, gv_session);
 			
 			gt_data = go_select.m_seleciona(gc_stamp);
 	
@@ -80,58 +107,108 @@ public class cl_main {
 			}
 			
 			break;
-		
-		case 2: // Seleciona apenas o CONN e processa ORIG e RESP salvando os dados na tabela
-		
-			go_select.m_conf_phoenix(gc_table, "Conn_ORIG_RESP", gv_session);
-			
-			gt_data = go_select.m_seleciona_conn(gc_stamp);
-			
-			cl_util.m_show_dataset(gt_data, "Totais de CONN:");
-			
-			go_processa.m_process_orig(gt_data, gv_stamp);
-			
-			go_processa.m_process_resp(gt_data, gv_stamp);		
-			
-			break;
-		
-		case 3: //Seleciona os resultados da opção 2 que foram salvos nas tabelas
-			
-			
-			break;
-					
-		case 4: //Seleciona os dados CONN processando os totais
-			
-			go_select.m_conf_phoenix(gc_table, "TotaisConn", gv_session);
-			
-			gt_data = go_select.m_seleciona_conn(gc_stamp);
-			
-			go_processa.m_process_totais(gt_data);
-			
-			break;
-						
+				
 		case 5: //Processa e salva as Análises na tabela
 					
-			go_select.m_conf_phoenix(gc_table, "TotaisConn", gv_session);
+			go_select.m_conf_phoenix(gc_table, gv_session);
 			
-			gt_data = go_select.m_seleciona(gc_stamp);
+			//gt_data = go_select.m_seleciona(gc_stamp);
+			
+			gt_data = go_select.m_seleciona_conn(gc_stamp);
 			
 			go_processa.m_start_analyzes(gt_data);			
 			
 			break;
 			
-		case 6:
+		case 6: //DDOS K-means								
 			
-			cl_kmeans lo_kmeans = new cl_kmeans();
+			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
 			
-			go_select.m_conf_phoenix("LOG_ANALYZES2", "Resultados", gv_session);
+			go_select.m_conf_phoenix(gc_table, gv_session);
 			
-			gt_data = go_select.m_seleciona_results("2018-12-04 10:57:00.000", "ORIG_H_P");
+			gt_data = go_select.m_seleciona_conn(gc_stamp);
 			
-			lo_kmeans.m_kmeans(gt_data, gv_session);
+			lo_kmeans.m_start_kmeans_ddos(gv_session, gt_data, gc_http );
+			
+			lo_kmeans.m_start_kmeans_ddos(gv_session, gt_data, gc_ssh );
+			
+			//lo_kmeans.m_start_kmeans_ddos(gv_session, gt_data, gc_ssl );						
+				
+			break;
+		
+		case 7: //Portscan Kmeans
+			
+			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
+			
+			go_select.m_conf_phoenix(gc_table, gv_session);
+			
+			gt_data = go_select.m_seleciona_conn(gc_stamp);
+			
+			lo_kmeans.m_start_kmeans_ScanPort(gv_session, gt_data, gc_tcp );
+			
+			lo_kmeans.m_start_kmeans_ScanPort(gv_session, gt_data, gc_udp );
 			
 			break;
-
+			
+		case 8: //Get resultados
+			
+			Dataset<Row> lt_res;
+						
+			String lv_stamp = "2018-12-05 12:20:00.000";
+			
+			String lc_format = "dd/MM/yyyy HH:mm";
+			
+			cl_util.m_time_start();
+			
+			//###########################################
+			//Totais
+			//###########################################			
+			
+			go_select.m_conf_phoenix(gc_totais, gv_session);
+			
+			lt_res = go_select.m_select_LogTotais(lv_stamp);						
+			
+			go_processa.m_export_totais(lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format)).persist());//Exporta TS no formato correto
+			
+			//###########################################						
+			//Kmeans DDoS
+			//###########################################
+			
+			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
+			
+			lv_stamp = "2018-12-10 00:01:00.000";
+			
+			go_select.m_conf_phoenix(gc_kmeans_ddos, gv_session);
+						
+			lt_res = go_select.m_select_LogKmeans(lv_stamp);
+									
+			lo_kmeans.m_export_kmeans_ddos(lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format)).persist());					
+			
+			//###########################################
+			//Kmeans Port Scan
+			//###########################################
+			
+			go_select.m_conf_phoenix(gc_kmeans_scan, gv_session);
+			
+			lt_res = go_select.m_select_LogKmeans(lv_stamp);
+			
+			lo_kmeans.m_export_kmeans_ScanPort(lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format)).persist());
+			
+			cl_util.m_time_end();
+			
+			break;
+		
+		case 9:
+			
+			go_select.m_conf_phoenix("LOG", gv_session);
+			
+			//utilizar as colunas das outras familias mesmo? alterado o nome da coluna add numero 1
+			gt_data = go_select.m_seleciona(gc_stamp);
+							
+			cl_util.m_show_dataset(gt_data, "NEW");
+			
+			break;			
+			
 		}		
 				
 	}

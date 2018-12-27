@@ -1,42 +1,103 @@
 package main;
 
 import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.date_format;
+import static org.apache.spark.sql.functions.to_timestamp;
+
 import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.functions;
+import org.apache.spark.storage.StorageLevel;
+
+import IpInfo.cl_pesquisa_ip;
 
 import static org.apache.spark.sql.functions.col;
 
-public class cl_process {
+public class cl_process{
 
 //---------CONSTANTES---------//
+	
+	final String gc_totais = cl_main.gc_totais;
+	
+	final String gc_conn = "CONN";
+	final String gc_dns  = "DNS";
+	final String gc_http = "HTTP";		
 		
-	final static String gc_conn_ip = "CONN_IP1";	
-	
-	final static String gc_totais = "LOG_TOTAIS";
-	
-	final static String gc_conn = "CONN";
-	final static String gc_dns  = "DNS";
-	final static String gc_http = "HTTP";
-	
 //------------------Colunas------------------------//
 	
-	final static String gc_proto 		= "PROTO";
-	final static String gc_service		= "SERVICE";
-	final static String gc_orig_h		= "ID_ORIG_H";
-	final static String gc_orig_p		= "ID_ORIG_P";
-	final static String gc_resp_h		= "ID_RESP_H";
-	final static String gc_resp_p		= "ID_RESP_P";
+	final String gc_proto 		 = "PROTO";
+	final String gc_service		 = "SERVICE";
+	final String gc_orig_h		 = "ID_ORIG_H";
+	final String gc_orig_p		 = "ID_ORIG_P";
+	final String gc_resp_h		 = "ID_RESP_H";
+	final String gc_resp_p		 = "ID_RESP_P";
+	final String gc_tipo		 = "TIPO";
+	final String gc_count   	 = "COUNT";
+	final String gc_ts   	 	 = "TS";
+		
+	final String gc_duration     = "DURATION";
+	final String gc_o_bytes      = "ORIG_IP_BYTES";
+	final String gc_r_bytes      = "RESP_IP_BYTES";
+	final String gc_orig_pkts    = "ORIG_PKTS";
+	final String gc_orig_bytes   = "ORIG_BYTES";
+	final String gc_resp_pkts	 = "RESP_PKTS";
+	final String gc_resp_bytes   = "RESP_BYTES";	
+
+//------------------Processar------------------------//
 	
-	final static String gc_duration     = "DURATION";
-	final static String gc_orig_pkts    = "ORIG_PKTS";
-	final static String gc_orig_bytes   = "ORIG_BYTES";
-	final static String gc_resp_pkts	= "RESP_PKTS";
-	final static String gc_resp_bytes   = "RESP_BYTES";						
+	final String lc_duration     = "SUM(DURATION) AS DURATION, ";
+	final String lc_o_bytes      = "SUM(ORIG_IP_BYTES) AS ORIG_IP_BYTES, "; 
+	final String lc_r_bytes      = "SUM(RESP_IP_BYTES) AS RESP_IP_BYTES, "; 
+	final String lc_orig_pkts    = "SUM(ORIG_PKTS) AS ORIG_PKTS, ";
+	final String lc_orig_bytes   = "SUM(ORIG_BYTES) AS ORIG_BYTES, ";
+	final String lc_resp_pkts	 = "SUM(RESP_PKTS) AS RESP_PKTS, ";
+	final String lc_resp_bytes   = "SUM(RESP_BYTES) AS RESP_BYTES ";	
 	
-//---------ATRIBUTOS---------//
+	final String lv_sum = lc_duration   +
+			              lc_o_bytes    + 
+			              lc_r_bytes    +
+						  lc_orig_pkts  + 
+						  lc_orig_bytes +
+						  lc_resp_pkts  +
+						  lc_resp_bytes;	
+	
+	final String lc_v = ", "; 
+	
+	//---------TIPOS DE TOTAIS---------//
+	
+	final static String lc_proto 		     = "PROTO";
+		
+	final static String lc_proto_orig_h	 	 = "PROTO_ORIG_H";
+	final static String lc_proto_orig_h_p 	 = "PROTO_ORIG_H_P";
+	final static String lc_proto_resp_h	 	 = "PROTO_RESP_H";
+	final static String lc_proto_resp_h_p 	 = "PROTO_RESP_H_P";
+	
+	final static String lc_proto_service     = "PROTO_SERVICE";
+	
+	final static String lc_p_s_orig_h   	 = "PROTO_SERVICE_ORIG_H";
+	final static String lc_p_s_orig_h_p   	 = "PROTO_SERVICE_ORIG_H_P";
+	
+	final static String lc_p_s_resp_h   	 = "PROTO_SERVICE_RESP_H";
+	final static String lc_p_s_resp_h_p   	 = "PROTO_SERVICE_RESP_H_P";
+	
+	final static String lc_service 	    	 = "SERVICE";
+	
+	final static String lc_orig_h	 	     = "ORIG_H";
+	final static String lc_orig_p	 	     = "ORIG_P";
+	final static String lc_orig_h_p	     	 = "ORIG_H_P";
+	final static String lc_orig_h_p_resp_h   = "ORIG_H_P_RESP_H";
+	      
+	final static String lc_resp_h	 	     = "RESP_H";
+	final static String lc_resp_p	 	     = "RESP_P";
+	final static String lc_resp_h_p	     	 = "RESP_H_P";
+	final static String lc_resp_h_p_orig_h 	 = "RESP_H_P_ORIG_H";
+	      
+	final static String lc_orig_h_resp_h 	 = "ORIG_H_RESP_H";
+	final static String lc_orig_h_p_resp_h_p = "ORIG_H_P_RESP_H_P";
+	
+	//---------ATRIBUTOS---------//
 	
 	private cl_seleciona go_select;
 	
@@ -44,6 +105,8 @@ public class cl_process {
 	
 	private long gv_stamp; //Stamp do inicio da execução
 	
+	//---------METODOS---------//
+		
 	public cl_process(String lv_filtro, long lv_stamp){
 		
 		java.sql.Timestamp lv_ts = java.sql.Timestamp.valueOf( lv_filtro ) ;
@@ -110,13 +173,9 @@ public class cl_process {
 							   "ID_RESP_H",
 							   "ID_RESP_P",
 							   "QUERY")
-				// col("ANSWERS"))
-				.filter(col("QUERY").like("%www.%"))//.limit(1000); // equalTo("www.facebook.com"))
-				.sort("QUERY");
+		    			.filter(col("QUERY").like("%www.%"))
+		    			.sort("QUERY");
 		
-		// .groupBy("QUERY")
-		// .count().sort(col("count").desc());
-
 		//m_save_csv(lv_res, "DNS-WWW");
 
 		cl_util.m_show_dataset(lv_res,"DNS-WWW");
@@ -162,150 +221,59 @@ public class cl_process {
 		cl_util.m_save_csv(lv_res, "CONN-WWW-SUM");	
 		
 	}
-	
-	///-----------CASE 2 - Conexões-----------////	
-	
-	public void m_process_orig(Dataset<Row> lt_orig, long lv_stamp) {	
-		
-		lt_orig = lt_orig.groupBy("ID_ORIG_H",
-								  //"ID_ORIG_P",
-								  "PROTO",
-								  "SERVICE")
-						 .sum("DURATION",
-							  "ORIG_BYTES",
-							  "RESP_BYTES");
-		
-		lt_orig = lt_orig.select(col("ID_ORIG_H"),
-                                // col("ID_ORIG_P"),
-                                 col("PROTO"),
-                                 col("SERVICE"),
-                                 col("sum(DURATION)").as("DURATION"),
-				                 col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
-				                 col("sum(RESP_BYTES)").as("RESP_BYTES"))
-		                 .withColumn("TS_CODE", functions.lit(lv_stamp));
-				
-		cl_util.m_save_log(lt_orig, gc_conn_ip);	
-		
-		cl_util.m_show_dataset(lt_orig, "Totais de CONN ORIGEM:");
-		
-	}
-	
-	public void m_process_resp(Dataset<Row> lt_resp, long lv_stamp) {
-				
-		lt_resp = lt_resp.groupBy("ID_RESP_H",
-								  //"ID_RESP_P",
-								  "PROTO",
-								  "SERVICE")
-						 .sum("DURATION",
-							  "ORIG_BYTES",
-							  "RESP_BYTES");
-		
-		lt_resp = lt_resp.select(col("ID_RESP_H"),
-                               //col("ID_RESP_P"),
-                               col("PROTO"),
-                               col("SERVICE"),
-                               col("sum(DURATION)").as("DURATION"),
-				               col("sum(ORIG_BYTES)").as("ORIG_BYTES"),
-				               col("sum(RESP_BYTES)").as("RESP_BYTES"))
-		                 .withColumn("TS_CODE", functions.lit(lv_stamp));
-		
-		cl_util.m_save_log(lt_resp, gc_conn_ip);			
-		
-		cl_util.m_show_dataset(lt_resp, "Totais de CONN RESPOSTA:");
-		
-	}
-		
-	
-	///-----------CASE 4 - TOTAIS-----------////
-
-	public void m_process_totais(Dataset<Row> lt_data) {
-		
-		Dataset<Row> lt_total;
-		
-		/*lt_total = gt_data.groupBy("PROTO",
-							  "ID_ORIG_H",
-							  "ID_ORIG_P",
-							  "ID_RESP_H",							  
-						      "ID_RESP_P")					     
-						 .sum("DURATION",
-							  "ORIG_PKTS",
-							  "ORIG_BYTES",
-							  "RESP_PKTS",
-							  "RESP_BYTES");*/
-		
-		/*gt_data.groupBy("PROTO")
-			   .count().show();
-		
-		gt_data.groupBy("PROTO",
-				        "SERVICE")
-			   .count().show();*/
-		
-		/*lt_total = gt_data.groupBy("ID_ORIG_H")				  			     
-			 .sum("DURATION",
-				  "ORIG_PKTS",
-				  "ORIG_BYTES",
-				  "RESP_PKTS",
-				  "RESP_BYTES");*/
-		
-		lt_total = lt_data//.filter(col("SERVICE").equalTo("http"))
-						  .filter(col("ID_ORIG_H").equalTo("192.168.10.50"))
-						  .groupBy("ID_ORIG_H",
-				                   //"ID_ORIG_P",
-				                   "ID_RESP_H",							  
-			                       "ID_RESP_P")				 		  
-						  .count();
-				 
-		
-		lt_total.sort(col("COUNT").desc()).show(200);
-		
-		/*lt_total = gt_data.groupBy("PROTO",
-				  "SERVICE")				  			     
-			 .sum("DURATION",
-				  "ORIG_PKTS",
-				  "ORIG_BYTES",
-				  "RESP_PKTS",
-				  "RESP_BYTES");
-		
-		m_save_csv(lt_total, "CONN_TOTAIS" );*/
-		
-	}
-
-	
+			
 	///-----------CASE 5 - Análises-----------////		
 	
 	public void m_start_analyzes(Dataset<Row> lt_data) {
 		
-		final String lc_proto 		     = "PROTO";
-		final String lc_service 	     = "SERVICE";
-		final String lc_orig_h	 	     = "ORIG_H";
-		final String lc_orig_p	 	     = "ORIG_P";
-		final String lc_orig_h_p	     = "ORIG_H_P";
-		final String lc_orig_h_proto	 = "ORIG_H_PROTO";
-		final String lc_orig_h_service	 = "ORIG_H_SERVICE";
-		final String lc_orig_h_p_resp_h  = "ORIG_H_P_RESP_H";
-		
-		final String lc_resp_h	 	     = "RESP_H";
-		final String lc_resp_p	 	     = "RESP_P";
-		final String lc_resp_h_p	     = "RESP_H_P";
-		final String lc_resp_h_proto	 = "RESP_H_PROTO";
-		final String lc_resp_h_service	 = "RESP_H_SERVICE";
-		final String lc_resp_h_p_orig_h  = "RESP_H_P_ORIG_H";
-		
-		final String lc_orig_h_resp_h 	  = "ORIG_H_RESP_H";
-		final String lc_orig_h_p_resp_h_p = "ORIG_H_P_RESP_H_P";
-		
-		String lc_v = ", ";
-		
 		String lv_group;
 				
-//-----------Conexões por PROTOCOLO--------------------------------------//
+		lt_data.createOrReplaceTempView("LOG"); //cria uma tabela temporaria, para acessar via SQL
 				
+//-----------Conexões por PROTOCOLO--------------------------------------//				
 		
 		m_group_sum(lt_data, gc_proto, lc_proto, "Conexões por Protocolo");
+		
+		lv_group = gc_proto + lc_v + gc_service;
+		
+		m_group_sum(lt_data, lv_group, lc_proto_service, "Conexões por Protocolo e Serviço");
+		
+		lv_group = gc_proto + lc_v + gc_orig_h;
+		
+		m_group_sum(lt_data, lv_group, lc_proto_orig_h, "Conexões por Protocolo e IP Origem");	
+		
+		lv_group = gc_proto + lc_v + gc_orig_h + lc_v + gc_orig_p;
+		
+		m_group_sum(lt_data, lv_group, lc_proto_orig_h_p, "Conexões por Protocolo, IP e Porta Origem");	
+		
+		lv_group = gc_proto + lc_v + gc_resp_h;
+		
+		m_group_sum(lt_data, lv_group, lc_proto_resp_h, "Conexões por Protocolo e IP Resposta");	
+		
+		lv_group = gc_proto + lc_v + gc_resp_h + lc_v + gc_resp_p;
+		
+		m_group_sum(lt_data, lv_group, lc_proto_resp_h_p, "Conexões por Protocolo, IP e Porta Resposta");
+		
 		
 //-----------Conexões por SERVIÇO--------------------------------------//
 		
 		m_group_sum(lt_data, gc_service, lc_service, "Conexões por Serviço");	
+		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_orig_h;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_orig_h, "Conexões por Protocolo, Serviço e IP Origem");
+		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_orig_h + lc_v + gc_orig_p;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_orig_h_p, "Conexões por Protocolo, Serviço, IP e Porta Origem\"");
+		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_resp_h;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_resp_h, "Conexões por Protocolo, Serviço e IP Resposta");
+		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_resp_h + lc_v + gc_resp_p;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_resp_h_p, "Conexões por Protocolo, Serviço, IP e Porta Resposta");
 		
 //-----------Conexões IP Origem--------------------------------------//
 		
@@ -315,15 +283,7 @@ public class cl_process {
 				
 		lv_group = gc_orig_h + lc_v + gc_orig_p; 
 				
-		m_group_sum(lt_data, lv_group, lc_orig_h_p, "Conexões por IP e Porta Origem");
-				
-		lv_group = gc_orig_h + lc_v + gc_proto;
-		
-		m_group_sum(lt_data, lv_group, lc_orig_h_proto, "Conexões por IP Origem e Protocolo");				
-		
-		lv_group = gc_orig_h + lc_v + gc_service;
-		
-		m_group_sum(lt_data, lv_group, lc_orig_h_service, "Conexões por IP Origem e Serviço");
+		m_group_sum(lt_data, lv_group, lc_orig_h_p, "Conexões por IP e Porta Origem");			
 								
 		lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h;
 		
@@ -338,16 +298,8 @@ public class cl_process {
 		
 		lv_group = gc_resp_h + lc_v + gc_resp_p;
 		
-		m_group_sum(lt_data, lv_group, lc_resp_h_p, "Conexões por IP e Porta Resposta");
-		
-		lv_group = gc_resp_h + lc_v + gc_proto;
-		
-		m_group_sum(lt_data, lv_group, lc_resp_h_proto, "Conexões por IP Resposta e Protocolo");		
-		
-		lv_group = gc_resp_h + lc_v + gc_service;
-		
-		m_group_sum(lt_data, lv_group, lc_resp_h_service, "Conexões por IP Resposta e Serviço");
-		
+		m_group_sum(lt_data, lv_group, lc_resp_h_p, "Conexões por IP e Porta Resposta");		
+				
 		lv_group = gc_resp_h + lc_v + gc_resp_p + lc_v + gc_orig_h;
 		
 		m_group_sum(lt_data, lv_group, lc_resp_h_p_orig_h, "Conexões por IP Resposta e Porta com IP Origem");
@@ -370,34 +322,23 @@ public class cl_process {
 						    String   lv_desc) {
 		
 		final String lc_table = "LOG"; 
+				
+		String ts_h = "DATE_FORMAT(TS,'dd.MM.yyyy HH') AS TS";
 		
-		final String lc_duration     = "SUM(DURATION) AS DURATION, ";
-		final String lc_orig_pkts    = "SUM(ORIG_PKTS) AS ORIG_PKTS, ";
-		final String lc_orig_bytes   = "SUM(ORIG_BYTES) AS ORIG_BYTES, ";
-		final String lc_resp_pkts	 = "SUM(RESP_PKTS) AS RESP_PKTS, ";
-		final String lc_resp_bytes   = "SUM(RESP_BYTES) AS RESP_BYTES ";	
+		String lv_grp = ts_h + ", " + lv_group 
+			            + ", COUNT(*) AS COUNT, ";
 		
-		final String lv_sum = lc_duration   + 
-							  lc_orig_pkts  + 
-							  lc_orig_bytes +
-							  lc_resp_pkts  +
-							  lc_resp_bytes;
-		
-		String lv_grp = lv_group + ", COUNT(*) AS COUNT, ";
+		lv_group = lv_group + ", DATE_FORMAT(TS,'dd.MM.yyyy HH')"; 
 		
 		String lv_sql = "SELECT " +
 						lv_grp    +
 						lv_sum    +
 						"FROM "   + lc_table +
-						" GROUP BY "+ lv_group;
+						" GROUP BY " + lv_group;
 		
 		Dataset<Row> lt_res;
 		
-		long lv_i = System.currentTimeMillis();  
-				
-		lv_i = System.currentTimeMillis();  			
-		
-		lt_data.createOrReplaceTempView("LOG"); //cria uma tabela temporaria, para acessar via SQL				
+		cl_util.m_time_start();							
 			
 		//System.out.println("SQL: "+lv_sql);
 				
@@ -407,16 +348,165 @@ public class cl_process {
 		lt_res = lt_res.withColumn("TIPO", functions.lit(lv_tipo))
 				       .withColumn("TS_FILTRO", functions.lit(gv_stamp_filtro))						   
 				       .withColumn("TS_CODE", functions.lit(gv_stamp))
-				       .withColumn("ROW_ID", functions.monotonically_increasing_id());
+				       .withColumn("ROW_ID", functions.monotonically_increasing_id())
+				       .withColumn(gc_ts, to_timestamp(col(gc_ts), "dd.MM.yyyy HH")); //para salvar no banco coloca em timestamp novamente;
 		
-		cl_util.m_show_dataset(lt_res, lv_desc + "-RES:");
+		//cl_util.m_show_dataset(lt_res, lv_desc + "-RES:");
 		
 		cl_util.m_save_log(lt_res, gc_totais);
 		
-		long lv_f = ( System.currentTimeMillis() - lv_i ) / 1000;
-		
-		System.out.println("Tipo-"+lv_tipo+" : A função foi executada em:\t" + lv_f +" Segundos");
+		cl_util.m_time_end();	
 			
+	}
+	
+	///-----------CASE 8 - Export Results-----------////
+	
+	public void m_export_totais(Dataset<Row> lt_data) {
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto))
+								  .sort(gc_ts), lc_proto);
+		
+		m_export_pivot(lt_data, gc_proto, "", "", lc_proto); //Historico por TS da utilização de Protocolo
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h))
+								  .sort(gc_ts, gc_proto, gc_orig_h), lc_proto_orig_h);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h_p))
+				  				  .sort(gc_ts, gc_proto, gc_orig_h, gc_orig_p ), lc_proto_orig_h_p);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_resp_h))
+   		      					  .sort(gc_ts, gc_proto, gc_resp_h), lc_proto_resp_h);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_resp_h_p))
+				  				  .sort(gc_ts, gc_proto, gc_resp_h, gc_resp_p), lc_proto_resp_h_p);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_service))
+								  .sort(gc_ts), lc_service);
+		
+		m_export_pivot(lt_data, gc_service, "", "", lc_service); //Historico por TS da utilização de Service
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_service))
+								  .sort(gc_ts, gc_proto, gc_service), lc_proto_service);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h))
+				  				  .sort(gc_ts, gc_proto, gc_service, gc_orig_h), lc_p_s_orig_h);
+		
+		m_export_pivot(lt_data, gc_orig_h, gc_service, cl_main.gc_http, lc_p_s_orig_h); //Historico por TS da utilização de HTTP por IP
+		
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h_p))
+								  .sort(gc_ts, gc_proto, gc_service, gc_orig_h, gc_orig_p), lc_p_s_orig_h_p);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_h))
+								  .sort(gc_ts, gc_proto, gc_service, gc_resp_h), lc_p_s_resp_h);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_h_p))
+				  				  .sort(gc_ts, gc_proto, gc_service, gc_resp_h, gc_resp_p), lc_p_s_resp_h_p);
+		
+		//-----------Conexões IP Origem--------------------------------------//
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h))
+								  .sort(gc_ts, gc_orig_h), lc_orig_h);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_p))
+								  .sort(gc_ts, gc_orig_p), lc_orig_p);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p))
+								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p);		
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p_resp_h ))
+								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h );
+		
+		//-----------Conexões IP Resposta--------------------------------------//
+		
+		m_export_resp_h(lt_data);// Com o IpInfo
+						
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_resp_p))
+								  .sort(gc_ts, gc_resp_p), lc_resp_p);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_resp_h_p))
+								  .sort(gc_ts, gc_resp_h, gc_resp_p), lc_resp_h_p);
+
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_resp_h_p_orig_h ))
+								  .sort(gc_ts, gc_resp_h, gc_resp_p), lc_resp_h_p_orig_h );
+				
+		
+		//-----------Conexões IP Origem com IP Resposta------------------------//
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_resp_h))
+								  .sort(gc_ts, gc_orig_h, gc_resp_h), lc_orig_h_resp_h);
+		
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p_resp_h_p))
+								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h_p);
+		
+	}
+	
+	public void m_export_resp_h(Dataset<Row> lt_data) {
+		
+		Dataset<Row> lt_filt;
+		
+		lt_filt = lt_data.filter(col(gc_tipo).equalTo(lc_resp_h))
+					     .sort(gc_ts, gc_resp_h)
+					     .persist(StorageLevel.MEMORY_ONLY());
+			
+		//cl_util.m_save_csv(lt_filt, lc_resp_h);
+
+		cl_pesquisa_ip lo_ip = new cl_pesquisa_ip(cl_main.gv_session, gv_stamp);
+
+		Dataset<Row> lt_ips;
+		
+		lt_ips = lt_filt.select(gc_resp_h, gc_count)
+					    .groupBy(gc_resp_h)
+					    .sum(gc_count)
+					    .withColumnRenamed("sum(count)", gc_count)
+					    .sort(col(gc_count).desc());
+		
+		lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_resp_h, 400); //Consulta no WebService
+		
+		lt_filt = lo_ip.m_processa_ip(lt_filt, cl_kmeans.gc_resp_h, 0);//Consulta no HBase
+		
+		//cl_util.m_show_dataset(lt_filt, lc_resp_h+" com IpInfo: ");
+		
+		cl_util.m_save_csv(lt_filt.sort(col(gc_count).desc()), lc_resp_h+"_INFO_WEB");
+		
+	}
+	
+	public void m_export_pivot(Dataset<Row> lt_data, String lv_pivot, String lv_col, String lv_tipo, String lv_dd) {
+		
+		Dataset<Row> lt_res;
+		
+		String lc_format = "dd.MM.yyyy";	
+		
+		if(lv_col.isEmpty()) {
+			
+			lt_res = lt_data;
+			
+		}else {
+			
+			lt_res = lt_data.filter(col(lv_col).equalTo(lv_tipo))
+							.sort(gc_ts);
+				
+		}
+				
+		Dataset<Row> lt_count;
+		
+		lt_count = lt_res.groupBy(gc_ts)
+	                     .pivot(lv_pivot)						 
+	                     .sum(gc_count)
+	                     .sort(col(gc_ts));
+		
+		cl_util.m_save_csv(lt_count, lv_dd + "_" + lv_tipo + "_PIVOT_H");
+		
+		lt_count = lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format))
+				         .groupBy(gc_ts)
+				         .pivot(lv_pivot)						 
+                         .sum(gc_count)
+                         .sort(col(gc_ts));
+
+		cl_util.m_save_csv(lt_count, lv_dd + "_" + lv_tipo + "_PIVOT_D");	
+		
+		
+		
 	}
 	
 }
