@@ -11,21 +11,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 
-import IpInfo.cl_IpInfo;
-import IpInfo.cl_pesquisa_ip;
-import io.ipinfo.api.IPInfo;
-//import io.ipinfo.api.errors.RateLimitedException;
-import io.ipinfo.api.model.IPResponse;
-
-//import org.apache.spark.sql.Column;
-
-//import org.apache.spark.sql.Encoder;
-import org.apache.spark.sql.Encoders;
-
-/*import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.MapFunction;*/
-
 public class cl_kmeans {
 	
 	//---------CONSTANTES---------//

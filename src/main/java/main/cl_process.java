@@ -363,7 +363,7 @@ public class cl_process{
 	
 	public void m_export_totais(Dataset<Row> lt_data) {
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto))
+		/*cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto))
 								  .sort(gc_ts), lc_proto);
 		
 		m_export_pivot(lt_data, gc_proto, "", "", lc_proto); //Historico por TS da utilização de Protocolo
@@ -419,7 +419,7 @@ public class cl_process{
 		
 		//-----------Conexões IP Resposta--------------------------------------//
 		
-		m_export_resp_h(lt_data);// Com o IpInfo
+//		m_export_resp_h(lt_data);// Com o IpInfo
 						
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_resp_p))
 								  .sort(gc_ts, gc_resp_p), lc_resp_p);
@@ -437,7 +437,9 @@ public class cl_process{
 								  .sort(gc_ts, gc_orig_h, gc_resp_h), lc_orig_h_resp_h);
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p_resp_h_p))
-								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h_p);
+								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h_p);*/
+		
+		m_export_resp_h(lt_data);// Com o IpInfo
 		
 	}
 	

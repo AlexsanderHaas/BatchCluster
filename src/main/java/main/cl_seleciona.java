@@ -195,7 +195,7 @@ public class cl_seleciona {
 			      .options(gv_phoenix)							   
 			      .load()			      
 			      .filter(col("TIPO").equalTo(gc_conn))
-			      .filter(col("TS_CODE").gt(lv_stamp))//.limit(100)			      
+			      .filter(col(gc_tsc).gt(lv_stamp))//.limit(100)			      
 				  //.sort(col("TS_CODE").desc())
 				  .persist(StorageLevel.MEMORY_ONLY());//Add 23/12/18					   
 	
@@ -225,7 +225,7 @@ public class cl_seleciona {
 			      .options(gv_phoenix)							   
 			      .load()			      			      
 			      .filter(col("TIPO").equalTo(lv_tipo))
-				  .filter(col("TS_CODE").gt(lv_stamp))
+				  .filter(col(gc_tsc).gt(lv_stamp))
 				  .filter(col("COUNT").isNull());
 			     		
 		//System.out.println("Conexões Resultado: \t"+lt_data.count() + "\n\n");
@@ -244,7 +244,8 @@ public class cl_seleciona {
 			      .format(gc_phoenix)
 			      .options(gv_phoenix)							   
 			      .load()			      			      
-				  .filter(col("TS_CODE").gt(lv_stamp))
+				  .filter(col(gc_tsc).gt(lv_stamp))
+				  .filter(col("TIPO").equalTo("RESP_H")).limit(1000)
 				  .persist(StorageLevel.MEMORY_ONLY());
 		
 			/*	  .filter(col("TIPO").equalTo("PROTO_SERVICE_ORIG_H"))
@@ -283,7 +284,8 @@ public class cl_seleciona {
 			                  .format(gc_phoenix)
 			                  .options(gv_phoenix)					   
 			                  .load()
-			                  .join(lt_data,col(lv_field).equalTo(col("IP")),"inner");
+			                  .join(lt_data,col(lv_field).equalTo(col("IP")),"inner")
+			                  .persist(StorageLevel.MEMORY_ONLY());
 			                  		
 		//cl_util.m_show_dataset(lt_res, "HBase: IpInfo: ");
 		
