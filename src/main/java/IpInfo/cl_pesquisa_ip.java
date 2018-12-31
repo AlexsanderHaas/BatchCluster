@@ -135,6 +135,8 @@ public class cl_pesquisa_ip {
 			lt_all = m_join_IpInfo(lt_data, lt_union);		
 			
 			cl_util.m_save_log(gt_ip_web, gc_table); 
+
+			gt_ip_web.unpersist();
 			
 			//Pois se salvar logo após a consulta, 
 			//ocorre EXCEPTION de concorrencia, pois nem salvou na tabela e ja consulta novamente. Assim salva apenas no final do processamento.
@@ -143,13 +145,8 @@ public class cl_pesquisa_ip {
 		
 			lt_all = m_join_IpInfo(lt_data, lt_ips_hb);
 			
-		}		
-		
-		lt_ips.unpersist();
-		lt_ips_hb.unpersist();
-		lt_ips_nf.unpersist();
-		gt_ip_web.unpersist();
-		
+		}			
+			
 		return lt_all;
 		
 	}
@@ -194,7 +191,7 @@ public class cl_pesquisa_ip {
 		
 		Dataset<Row> lt_ip;
 				
-		lt_ip = lt_data.select(gv_field).distinct().limit(5);
+		lt_ip = lt_data.select(gv_field).distinct();//.limit(5);
 				
 		Dataset<cl_IpInfo> lt_IpInfo = lt_ip.map( row->{ 
 			

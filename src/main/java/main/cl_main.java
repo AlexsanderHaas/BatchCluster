@@ -47,7 +47,7 @@ public class cl_main {
 	
 	private Date gv_time = new Date();
 	
-	private static int gv_submit = 0; //1=Cluster 
+	public static int gv_submit = 1; //1=Cluster 
 	
 	private static int gv_batch = 8;
 	
@@ -152,24 +152,30 @@ public class cl_main {
 			String lv_stamp = "2018-12-30 12:20:00.000";
 			
 			//String lc_format = "dd/MM/yyyy HH:mm";
-			
+						
 			cl_util.m_time_start();
-			
-			//###########################################
-			//Totais
-			//###########################################			
 			
 			go_select.m_conf_phoenix(gc_totais, gv_session);
 			
 			lt_res = go_select.m_select_LogTotais(lv_stamp);											
+						
+			//###########################################
+			//IpInfo
+			//###########################################
 			
+			go_processa.m_export_resp_h(lt_res);// Com o IpInfo
+			
+			//###########################################
+			//Totais
+			//###########################################			
+						
 			go_processa.m_export_totais(lt_res);
-			
+						
 			//###########################################						
 			//Kmeans DDoS
 			//###########################################
 			
-			/*lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
+			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
 			
 			lv_stamp = "2018-12-10 00:01:00.000";
 			
@@ -187,7 +193,7 @@ public class cl_main {
 			
 			lt_res = go_select.m_select_LogKmeans(lv_stamp);
 						
-			lo_kmeans.m_export_kmeans_ScanPort(lt_res);*/
+			lo_kmeans.m_export_kmeans_ScanPort(lt_res);
 			
 			cl_util.m_time_end();
 			

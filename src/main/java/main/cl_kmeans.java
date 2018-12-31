@@ -2,6 +2,8 @@ package main;
 
 import static org.apache.spark.sql.functions.*;
 
+import java.io.IOException;
+
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.feature.VectorAssembler;
@@ -10,6 +12,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
+import org.apache.spark.storage.StorageLevel;
 
 public class cl_kmeans {
 	
@@ -82,6 +85,8 @@ public class cl_kmeans {
 		
 		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_ddos);
 		
+		lt_res.unpersist();
+		
 	}
 
 	public Dataset<Row> m_normaliza_analise_ddos(Dataset<Row> lt_data) {	
@@ -148,7 +153,7 @@ public class cl_kmeans {
 		
 		cl_util.m_time_end();
 		
-		return lt_res;
+		return lt_res.persist(StorageLevel.MEMORY_ONLY());
 		
 	}
 		
@@ -161,6 +166,8 @@ public class cl_kmeans {
 		lt_res = m_normaliza_analise_ScanPort(lt_data);
 		
 		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_scan);
+		
+		lt_res.unpersist();
 		
 	}
 	
@@ -228,7 +235,7 @@ public class cl_kmeans {
 		
 		cl_util.m_time_end();
 		
-		return lt_res;
+		return lt_res.persist(StorageLevel.MEMORY_ONLY());
 		
 	}
 	
@@ -309,6 +316,17 @@ public class cl_kmeans {
 	    //cl_util.m_save_json(lt_res, "DDoS-Kmeansdrop");
 	    
 	    //cl_util.m_show_dataset(lt_res, gv_tipo+lv_table);
+	    
+	    String lv_path = "/network/unb/model/"+lv_table +"/"+gv_tipo;
+	    
+	    try {
+			model.save(lv_path);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			System.out.println("\nProblema: Ao salvar MODEL KMEANS"+lv_table);
+			e1.printStackTrace();
+		}
+		
 	    
 	    cl_util.m_save_log(lt_res, lv_table);    
 	    	    
