@@ -17,17 +17,17 @@ public class cl_main {
 	
 	//---------CONSTANTES---------//
 	
-	final static String gc_table 		= "LOG";
+	final static String gc_table 		= "LOG_UFSM";
 	
-	final static String gc_kmeans_ddos 	= "LOG_KMEANS_DDOS";
+	final static String gc_kmeans_ddos 	= "LOG_KMEANS_DDOS_UFSM";
 	
-	final static String gc_kmeans_scan 	= "LOG_KMEANS_SCAN_PORT";
+	final static String gc_kmeans_scan 	= "LOG_KMEANS_SCAN_PORT_UFSM";
 	
-	final static String gc_totais 	    = "LOG_TOTAIS";
+	final static String gc_totais 	    = "LOG_TOTAIS_UFSM";
 	
 	final static String gc_conn_ip 		= "CONN_IP1";
 	
-	final static String gc_stamp 		= "2018-12-02 21:57:00.000"; //por aqui ele considera o GMT -2 e no SQL no CMD é sem GMT
+	final static String gc_stamp 		= "2019-01-01 13:00:00.000"; //por aqui ele considera o GMT -2 e no SQL no CMD é sem GMT
 	
 	final static String gc_http 		= "http";
 	
@@ -49,7 +49,7 @@ public class cl_main {
 	
 	public static int gv_submit = 1; //1=Cluster 
 	
-	private static int gv_batch = 8;
+	private static int gv_batch = 6;
 	
 	private Dataset<Row> gt_data;
 	
@@ -149,7 +149,7 @@ public class cl_main {
 			
 			Dataset<Row> lt_res;
 						
-			String lv_stamp = "2018-12-30 12:20:00.000";
+			String lv_stamp = "2019-01-01 13:00:00.000";
 			
 			//String lc_format = "dd/MM/yyyy HH:mm";
 						
@@ -176,8 +176,6 @@ public class cl_main {
 			//###########################################
 			
 			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
-			
-			lv_stamp = "2018-12-10 00:01:00.000";
 			
 			go_select.m_conf_phoenix(gc_kmeans_ddos, gv_session);
 						

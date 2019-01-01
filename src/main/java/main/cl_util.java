@@ -7,7 +7,7 @@ public class cl_util {
 	
 	final static String gc_zkurl = cl_seleciona.gc_zkurl; //"localhost:2181";
 	
-	final static String gc_path_r = "/network/unb/";//"/home/user/Documentos/unb_resultados/";
+	final static String gc_path_r = "/network/ufsm/";//"/home/user/Documentos/unb_resultados/";
 	
 	static long gv_ini;
 	
