@@ -79,8 +79,12 @@ public class cl_process{
 	final static String lc_p_s_orig_h   	 = "PROTO_SERVICE_ORIG_H";
 	final static String lc_p_s_orig_h_p   	 = "PROTO_SERVICE_ORIG_H_P";
 	
+	final static String lc_p_s_orig_p 	     = "PROTO_SERVICE_ORIG_P";
+	
 	final static String lc_p_s_resp_h   	 = "PROTO_SERVICE_RESP_H";
 	final static String lc_p_s_resp_h_p   	 = "PROTO_SERVICE_RESP_H_P";
+	
+	final static String lc_p_s_resp_p 	     = "PROTO_SERVICE_RESP_P";
 	
 	final static String lc_service 	    	 = "SERVICE";
 	
@@ -237,7 +241,7 @@ public class cl_process{
 		lv_group = gc_proto + lc_v + gc_service;
 		
 		m_group_sum(lt_data, lv_group, lc_proto_service, "Conexões por Protocolo e Serviço");
-		
+		/*
 		lv_group = gc_proto + lc_v + gc_orig_h;
 		
 		m_group_sum(lt_data, lv_group, lc_proto_orig_h, "Conexões por Protocolo e IP Origem");	
@@ -253,31 +257,42 @@ public class cl_process{
 		lv_group = gc_proto + lc_v + gc_resp_h + lc_v + gc_resp_p;
 		
 		m_group_sum(lt_data, lv_group, lc_proto_resp_h_p, "Conexões por Protocolo, IP e Porta Resposta");
-		
+		*/
 		
 //-----------Conexões por SERVIÇO--------------------------------------//
 		
-		m_group_sum(lt_data, gc_service, lc_service, "Conexões por Serviço");	
+		//m_group_sum(lt_data, gc_service, lc_service, "Conexões por Serviço");	
 		
 		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_orig_h;
 		
 		m_group_sum(lt_data, lv_group, lc_p_s_orig_h, "Conexões por Protocolo, Serviço e IP Origem");
-		
+				
+		/*
 		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_orig_h + lc_v + gc_orig_p;
 		
 		m_group_sum(lt_data, lv_group, lc_p_s_orig_h_p, "Conexões por Protocolo, Serviço, IP e Porta Origem\"");
+		*/
 		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_orig_p;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_orig_p, "Conexões por Protocolo, Serviço e Porta Origem\"");
+				
 		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_resp_h;
 		
 		m_group_sum(lt_data, lv_group, lc_p_s_resp_h, "Conexões por Protocolo, Serviço e IP Resposta");
-		
+		/*
 		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_resp_h + lc_v + gc_resp_p;
 		
 		m_group_sum(lt_data, lv_group, lc_p_s_resp_h_p, "Conexões por Protocolo, Serviço, IP e Porta Resposta");
+		*/
+		
+		lv_group =  gc_proto + lc_v + gc_service + lc_v + gc_resp_p;
+		
+		m_group_sum(lt_data, lv_group, lc_p_s_resp_p, "Conexões por Protocolo, Serviço e Porta Resposta");
 		
 //-----------Conexões IP Origem--------------------------------------//
 		
-		m_group_sum(lt_data, gc_orig_h, lc_orig_h, "Conexões por IP Origem");
+		/*m_group_sum(lt_data, gc_orig_h, lc_orig_h, "Conexões por IP Origem");
 						
 		m_group_sum(lt_data, gc_orig_p, lc_orig_p,"Conexões por Portas Origem");	
 				
@@ -288,11 +303,11 @@ public class cl_process{
 		lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h;
 		
 		m_group_sum(lt_data, lv_group, lc_orig_h_p_resp_h,"Conexões por IP Origem e Porta com IP Resposta");
-		
+		*/
 		
 //-----------Conexões IP Resposta--------------------------------------//
 		
-		m_group_sum(lt_data, gc_resp_h, lc_resp_h, "Conexões por IP Resposta");
+		/*m_group_sum(lt_data, gc_resp_h, lc_resp_h, "Conexões por IP Resposta");
 		
 		m_group_sum(lt_data, gc_resp_p, lc_resp_p, "Conexões por Portas Resposta");
 		
@@ -303,17 +318,17 @@ public class cl_process{
 		lv_group = gc_resp_h + lc_v + gc_resp_p + lc_v + gc_orig_h;
 		
 		m_group_sum(lt_data, lv_group, lc_resp_h_p_orig_h, "Conexões por IP Resposta e Porta com IP Origem");
-		
+		*/
 //-----------Conexões IP Origem com IP Resposta--------------------------------------//
 		
 		lv_group = gc_orig_h + lc_v + gc_resp_h;
 		
 		m_group_sum(lt_data, lv_group, lc_orig_h_resp_h, "Conexões por IP Origem e IP Resposta");		
 		
-		lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h + lc_v + gc_resp_p;
+		/*lv_group = gc_orig_h + lc_v + gc_orig_p + lc_v + gc_resp_h + lc_v + gc_resp_p;
 		
 		m_group_sum(lt_data, lv_group, lc_orig_h_p_resp_h_p, "Conexões por IP Origem e Porta com IP Resposta e Porta");
-		
+		*/
 	}
 		
 	public void m_group_sum(Dataset<Row> lt_data, 									
@@ -445,9 +460,9 @@ public class cl_process{
 		
 		Dataset<Row> lt_filt;
 		
-		lt_filt = lt_data.filter(col(gc_tipo).equalTo(lc_resp_h))
-					     .sort(gc_ts, gc_resp_h)
-					     .persist(StorageLevel.MEMORY_ONLY());
+		lt_filt = lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_h))//(lc_resp_h))
+					     .sort(gc_ts, gc_resp_h);
+					     //.persist(StorageLevel.MEMORY_AND_DISK());
 			
 		//cl_util.m_save_csv(lt_filt, lc_resp_h);
 
@@ -459,7 +474,8 @@ public class cl_process{
 					    .groupBy(gc_resp_h)
 					    .sum(gc_count)
 					    .withColumnRenamed("sum(count)", gc_count)
-					    .sort(col(gc_count).desc());
+					    .sort(col(gc_count).desc())
+					    .persist(StorageLevel.MEMORY_AND_DISK());
 		
 		if( cl_main.gv_submit == 0) { //Local Web Service
 			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_resp_h, 1000); //Consulta no WebService
@@ -471,7 +487,9 @@ public class cl_process{
 			
 			cl_util.m_save_csv(lt_filt.sort(col(gc_count).desc()), lc_resp_h+"_INFO_WEB");
 			
-		}		
+		}
+		
+		lt_filt.unpersist();
 		
 	}
 	

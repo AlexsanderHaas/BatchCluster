@@ -145,7 +145,7 @@ public class cl_kmeans {
 			           .withColumn(gc_rowid, functions.monotonically_increasing_id())
 			           .withColumn(gc_ts, to_timestamp(col(gc_ts),gc_format)); //para salvar no banco coloca em timestamp novamente
 		
-		//cl_util.m_show_dataset(lt_res, "1) Normaliza Kmeans");									
+		cl_util.m_show_dataset(lt_res, "1) Normaliza Kmeans");									
 		
 		//m_IpOrig_ForTime(lt_res);
 		
@@ -153,7 +153,7 @@ public class cl_kmeans {
 		
 		cl_util.m_time_end();
 		
-		return lt_res.persist(StorageLevel.MEMORY_ONLY());
+		return lt_res.persist(StorageLevel.MEMORY_AND_DISK());
 		
 	}
 		
@@ -227,7 +227,7 @@ public class cl_kmeans {
 			           .withColumn(gc_rowid, functions.monotonically_increasing_id())
 			           .withColumn(gc_ts, to_timestamp(col(gc_ts),gc_format)); //para salvar no banco coloca em timestamp novamente
 		
-		//cl_util.m_show_dataset(lt_res, "1) Normaliza Kmeans");									
+		cl_util.m_show_dataset(lt_res, "1) Normaliza Scan Port");									
 		
 		//m_IpOrig_ForTime(lt_res);
 		
@@ -235,7 +235,7 @@ public class cl_kmeans {
 		
 		cl_util.m_time_end();
 		
-		return lt_res.persist(StorageLevel.MEMORY_ONLY());
+		return lt_res.persist(StorageLevel.MEMORY_AND_DISK());
 		
 	}
 	
@@ -300,7 +300,7 @@ public class cl_kmeans {
 	    		  					.replace("[", "")
 	    		  					.replace("]", "");
 	      
-	     // System.out.println("CENTER:" + lv_centroid[lv_i]);
+	     System.out.println("CENTER:" + lv_centroid[lv_i]);
 	      
 	      lv_i ++;
 	      
@@ -317,14 +317,25 @@ public class cl_kmeans {
 	    
 	    //cl_util.m_show_dataset(lt_res, gv_tipo+lv_table);
 	    
-	    String lv_path = "/network/unb/model/"+lv_table +"/"+gv_tipo;
+	    String lv_path = "/network/ufsm/model/"+lv_table +"/"+gv_tipo;
+	    
+	    System.out.println("\n Direotiro do MODEL: "+lv_path);
 	    
 	    try {
-			model.save(lv_path);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			System.out.println("\nProblema: Ao salvar MODEL KMEANS"+lv_table);
+	    	
+			model.write()
+				 .overwrite()
+				 .save(lv_path);
+			
+			System.out.println("\n Salvou o MODEL: "+lv_path);
+			
+	    } catch (IOException e1) {
+			
+			System.out.println("\nProblema: Ao salvar MODEL KMEANS: "+lv_table
+					+ "ERRO: "+e1);
+			
 			e1.printStackTrace();
+			
 		}
 		
 	    
