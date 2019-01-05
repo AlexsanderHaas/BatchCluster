@@ -47,9 +47,9 @@ public class cl_main {
 	
 	private Date gv_time = new Date();
 	
-	public static int gv_submit = 0; //1=Cluster 
+	public static int gv_submit = 1; //1=Cluster 
 	
-	private static int gv_batch = 4;
+	private static int gv_batch = 8;
 	
 	private Dataset<Row> gt_data;
 	
@@ -153,7 +153,7 @@ public class cl_main {
 			
 			//lo_kmeans.m_start_kmeans_ddos(gv_session, gt_data, gc_ssl );						
 				
-/*			break;
+			break;
 		
 		case 7: //Portscan Kmeans
 			
@@ -161,7 +161,7 @@ public class cl_main {
 			
 			go_select.m_conf_phoenix(gc_table, gv_session);
 			
-			gt_data = go_select.m_seleciona_conn(gc_stamp);*/
+			gt_data = go_select.m_seleciona_conn(gc_stamp);
 			
 			lo_kmeans.m_start_kmeans_ScanPort(gv_session, gt_data, gc_tcp );
 			
@@ -187,25 +187,29 @@ public class cl_main {
 			//IpInfo
 			//###########################################
 			
-			go_processa.m_export_resp_h(lt_res);// Com o IpInfo
+			//go_processa.m_export_resp_h(lt_res);// Com o IpInfo
 			
 			//###########################################
 			//Totais
 			//###########################################			
 						
 			go_processa.m_export_totais(lt_res);
+			
+			//lt_res.unpersist();
 						
 			//###########################################						
 			//Kmeans DDoS
 			//###########################################
 			
 			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
-			
+			/*
 			go_select.m_conf_phoenix(gc_kmeans_ddos, gv_session);
 						
 			lt_res = go_select.m_select_LogKmeans(lv_stamp);
 									
 			lo_kmeans.m_export_kmeans_ddos(lt_res);
+			
+			lt_res.unpersist();*/
 											
 			//###########################################
 			//Kmeans Port Scan
@@ -216,6 +220,8 @@ public class cl_main {
 			lt_res = go_select.m_select_LogKmeans(lv_stamp);
 						
 			lo_kmeans.m_export_kmeans_ScanPort(lt_res);
+			
+			//lt_res.unpersist();
 			
 			cl_util.m_time_end();
 			

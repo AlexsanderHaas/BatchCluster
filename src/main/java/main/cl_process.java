@@ -383,7 +383,7 @@ public class cl_process{
 		
 		m_export_pivot(lt_data, gc_proto, "", "", lc_proto); //Historico por TS da utilização de Protocolo
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h))
+		/*cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h))
 								  .sort(gc_ts, gc_proto, gc_orig_h), lc_proto_orig_h);
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h_p))
@@ -399,9 +399,12 @@ public class cl_process{
 								  .sort(gc_ts), lc_service);
 		
 		m_export_pivot(lt_data, gc_service, "", "", lc_service); //Historico por TS da utilização de Service
-		
+		*/
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_service))
 								  .sort(gc_ts, gc_proto, gc_service), lc_proto_service);
+		
+		m_export_pivot(lt_data, gc_service, "", "", lc_proto_service); //Historico por TS da utilização de Service
+		
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h))
 				  				  .sort(gc_ts, gc_proto, gc_service, gc_orig_h), lc_p_s_orig_h);
@@ -409,18 +412,18 @@ public class cl_process{
 		m_export_pivot(lt_data, gc_orig_h, gc_service, cl_main.gc_http, lc_p_s_orig_h); //Historico por TS da utilização de HTTP por IP
 		
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h_p))
-								  .sort(gc_ts, gc_proto, gc_service, gc_orig_h, gc_orig_p), lc_p_s_orig_h_p);
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_p))
+								  .sort(gc_ts, gc_proto, gc_service, gc_orig_p), lc_p_s_orig_p);
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_h))
 								  .sort(gc_ts, gc_proto, gc_service, gc_resp_h), lc_p_s_resp_h);
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_h_p))
-				  				  .sort(gc_ts, gc_proto, gc_service, gc_resp_h, gc_resp_p), lc_p_s_resp_h_p);
+		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_resp_p))
+				  				  .sort(gc_ts, gc_proto, gc_service, gc_resp_p), lc_p_s_resp_p);
 		
 		//-----------Conexões IP Origem--------------------------------------//
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h))
+		/*cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h))
 								  .sort(gc_ts, gc_orig_h), lc_orig_h);
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_p))
@@ -443,7 +446,7 @@ public class cl_process{
 								  .sort(gc_ts, gc_resp_h, gc_resp_p), lc_resp_h_p);
 
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_resp_h_p_orig_h ))
-								  .sort(gc_ts, gc_resp_h, gc_resp_p), lc_resp_h_p_orig_h );
+								  .sort(gc_ts, gc_resp_h, gc_resp_p), lc_resp_h_p_orig_h );*/
 				
 		
 		//-----------Conexões IP Origem com IP Resposta------------------------//
@@ -451,8 +454,8 @@ public class cl_process{
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_resp_h))
 								  .sort(gc_ts, gc_orig_h, gc_resp_h), lc_orig_h_resp_h);
 		
-		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p_resp_h_p))
-								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h_p);			
+		/*cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_p_resp_h_p))
+								  .sort(gc_ts, gc_orig_h, gc_orig_p), lc_orig_h_p_resp_h_p);*/			
 		
 	}
 	
@@ -485,7 +488,7 @@ public class cl_process{
 			
 			//cl_util.m_show_dataset(lt_filt, lc_resp_h+" com IpInfo: ");
 			
-			cl_util.m_save_csv(lt_filt.sort(col(gc_count).desc()), lc_resp_h+"_INFO_WEB");
+			cl_util.m_save_csv(lt_filt.sort(col(gc_count).desc()), lc_p_s_resp_h+"_INFO_WEB");
 			
 		}
 		

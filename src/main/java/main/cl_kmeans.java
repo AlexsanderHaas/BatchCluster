@@ -317,7 +317,7 @@ public class cl_kmeans {
 	    
 	    //cl_util.m_show_dataset(lt_res, gv_tipo+lv_table);
 	    
-	    String lv_path = "/network/ufsm/model/"+lv_table +"/"+gv_tipo;
+	    String lv_path = "/network/ufsm/model/"+lv_table +"_GT_09_12/"+gv_tipo;
 	    
 	    System.out.println("\n Direotiro do MODEL: "+lv_path);
 	    
@@ -337,8 +337,7 @@ public class cl_kmeans {
 			e1.printStackTrace();
 			
 		}
-		
-	    
+			    
 	    cl_util.m_save_log(lt_res, lv_table);    
 	    	    
 	    cl_util.m_time_end();
@@ -371,21 +370,25 @@ public class cl_kmeans {
 				
 		Dataset<Row> lt_res;
 		
+		final String lc_centroid = "CENTROID";
+		
 		String lc_format = "dd.MM.yyyy HH";	
 		
 		lt_res = lt_data.filter(col(lv_col).equalTo(lv_tipo))
 						.sort(gc_ts);
 		
-		cl_util.m_save_json(lt_res, lv_dd+lv_tipo);
+		//cl_util.m_save_json(lt_res, lv_dd+lv_tipo);
+		
+		cl_util.m_save_csv(lt_res.drop(lc_centroid), lv_dd+lv_tipo);
 		
 		Dataset<Row> lt_count;
 		
-		lt_count = lt_res.groupBy(gc_ts)
+		/*lt_count = lt_res.groupBy(gc_ts)
 	                     .pivot(lv_pivot)						 
 	                     .sum(gc_count)
 	                     .sort(col(gc_ts));
 		
-		cl_util.m_save_csv(lt_count, lv_dd+lv_tipo+"_PIVOT_M");
+		cl_util.m_save_csv(lt_count, lv_dd+lv_tipo+"_PIVOT_M");*/
 		
 		lt_count = lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format))
 				         .groupBy(gc_ts)

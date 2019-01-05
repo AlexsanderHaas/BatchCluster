@@ -200,7 +200,7 @@ public class cl_seleciona {
 			      .load()			      
 			      .filter(col("TIPO").equalTo(gc_conn))
 			      //.filter(col(gc_tsc).gt(lv_stamp))//.limit(100)			      
-			      .filter(col(gc_ts).lt(lc_stamp))//.limit(100)				  
+			      .filter(col(gc_ts).gt(lc_stamp))//.limit(100)				  
 				  .persist(StorageLevel.MEMORY_AND_DISK());//Add 23/12/18					   
 	
 		/*Dataset<Row> lt_orig;	
@@ -248,8 +248,9 @@ public class cl_seleciona {
 			      .format(gc_phoenix)
 			      .options(gv_phoenix)							   
 			      .load()			      			      
-				  .filter(col(gc_tsc).gt(lv_stamp))
-				  .filter(col("TIPO").equalTo(cl_process.lc_p_s_resp_h));
+				  .filter(col(gc_tsc).gt(lv_stamp))		
+				  .persist(StorageLevel.MEMORY_AND_DISK());
+				  //.filter(col("TIPO").equalTo(cl_process.lc_p_s_resp_h));
 				  //.filter(col("TIPO").equalTo("RESP_H")).limit(1000)
 				  //.persist(StorageLevel.MEMORY_AND_DISK());
 		
@@ -272,8 +273,8 @@ public class cl_seleciona {
 			      .format(gc_phoenix)
 			      .options(gv_phoenix)							   
 			      .load()			      			      
-				  .filter(col(cl_kmeans.gc_ts_code).gt(lv_stamp));
-				  //.persist(StorageLevel.MEMORY_AND_DISK());
+				  .filter(col(cl_kmeans.gc_ts_code).gt(lv_stamp))
+				  .persist(StorageLevel.MEMORY_AND_DISK());
 		
 		//cl_util.m_show_dataset(lt_data, "HBase: LOG totais do KMEANS: ");
 					
