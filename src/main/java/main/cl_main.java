@@ -49,7 +49,7 @@ public class cl_main {
 	
 	public static int gv_submit = 1; //1=Cluster 
 	
-	private static int gv_batch = 8;
+	private static int gv_batch = 6;
 	
 	private Dataset<Row> gt_data;
 	
@@ -179,7 +179,7 @@ public class cl_main {
 						
 			cl_util.m_time_start();
 			
-			go_select.m_conf_phoenix(gc_totais, gv_session);
+			/*go_select.m_conf_phoenix(gc_totais, gv_session);
 			
 			lt_res = go_select.m_select_LogTotais(lv_stamp);											
 						
@@ -193,7 +193,7 @@ public class cl_main {
 			//Totais
 			//###########################################			
 						
-			go_processa.m_export_totais(lt_res);
+			go_processa.m_export_totais(lt_res);*/
 			
 			//lt_res.unpersist();
 						
@@ -202,24 +202,24 @@ public class cl_main {
 			//###########################################
 			
 			lo_kmeans = new cl_kmeans(gc_stamp, gv_stamp);
-			/*
+			
 			go_select.m_conf_phoenix(gc_kmeans_ddos, gv_session);
 						
 			lt_res = go_select.m_select_LogKmeans(lv_stamp);
 									
 			lo_kmeans.m_export_kmeans_ddos(lt_res);
 			
-			lt_res.unpersist();*/
+			lt_res.unpersist();
 											
 			//###########################################
 			//Kmeans Port Scan
 			//###########################################
 			
-			go_select.m_conf_phoenix(gc_kmeans_scan, gv_session);
+			/*go_select.m_conf_phoenix(gc_kmeans_scan, gv_session);
 			
 			lt_res = go_select.m_select_LogKmeans(lv_stamp);
 						
-			lo_kmeans.m_export_kmeans_ScanPort(lt_res);
+			lo_kmeans.m_export_kmeans_ScanPort(lt_res);*/
 			
 			//lt_res.unpersist();
 			

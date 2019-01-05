@@ -199,21 +199,10 @@ public class cl_seleciona {
 			      .options(gv_phoenix)							   
 			      .load()			      
 			      .filter(col("TIPO").equalTo(gc_conn))
-			      //.filter(col(gc_tsc).gt(lv_stamp))//.limit(100)			      
-			      .filter(col(gc_ts).gt(lc_stamp))//.limit(100)				  
+			      .filter(col(gc_tsc).gt(lv_stamp))//.limit(100)			      
+			      //.filter(col(gc_ts).gt(lc_stamp))//.limit(100)				  
 				  .persist(StorageLevel.MEMORY_AND_DISK());//Add 23/12/18					   
-	
-		/*Dataset<Row> lt_orig;	
-		
-		lt_orig = gt_data.groupBy("ID_ORIG_H",
-								  "ID_ORIG_P",
-								  "PROTO",
-								  "SERVICE").count();
-		
-		System.out.println("Conexões TOTAL: \t"+ lt_orig.count() + "\n\n");
-		
-		lt_orig.show();*/
-		
+			
 		return lt_data;
 				
 	}

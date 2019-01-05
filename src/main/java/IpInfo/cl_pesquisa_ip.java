@@ -65,7 +65,7 @@ public class cl_pesquisa_ip {
 		go_select.m_conf_phoenix(gc_table, gv_session);
 		
 		int lv_free = go_select.m_Limit_IpInfo(); //Verifica limite diario
-		
+		lv_free = 1000;
 		System.out.println("\nConsultas disponiveis no dia: " + lv_free);
 		
 		cl_util.m_show_dataset(lt_data, "Dados a consultar: ");		
@@ -185,7 +185,7 @@ public class cl_pesquisa_ip {
 	
 	public void m_search_WebService(Dataset<Row> lt_data){
 
-		final String lc_token = "dc695e943d23f0"; 
+		final String lc_token = "fe0c548f2e32c5";//"dc695e943d23f0"; 
 		
 		Dataset<Row> lt_res;
 		

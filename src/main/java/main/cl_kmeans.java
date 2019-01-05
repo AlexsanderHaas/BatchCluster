@@ -14,6 +14,8 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
 import org.apache.spark.storage.StorageLevel;
 
+import IpInfo.cl_pesquisa_ip;
+
 public class cl_kmeans {
 	
 	//---------CONSTANTES---------//
@@ -85,7 +87,7 @@ public class cl_kmeans {
 		
 		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_ddos);
 		
-		lt_res.unpersist();
+		//lt_res.unpersist();
 		
 	}
 
@@ -338,7 +340,7 @@ public class cl_kmeans {
 			
 		}
 			    
-	    cl_util.m_save_log(lt_res, lv_table);    
+	    //cl_util.m_save_log(lt_res, lv_table);    
 	    	    
 	    cl_util.m_time_end();
 	    	    	    
@@ -348,7 +350,7 @@ public class cl_kmeans {
 		
 		String lv_dd = "DDoS_";
 				
-		m_export_process(lt_data, gc_orig_h, gc_service, cl_main.gc_http, lv_dd);
+		m_export_process(lt_data, gc_resp_h, gc_service, cl_main.gc_http, lv_dd);
 				
 		//m_export_process(lt_data, gc_orig_h, gc_service, cl_main.gc_ssl, lv_dd);
 		
@@ -377,27 +379,65 @@ public class cl_kmeans {
 		lt_res = lt_data.filter(col(lv_col).equalTo(lv_tipo))
 						.sort(gc_ts);
 		
-		//cl_util.m_save_json(lt_res, lv_dd+lv_tipo);
-		
-		cl_util.m_save_csv(lt_res.drop(lc_centroid), lv_dd+lv_tipo);
+		//cl_util.m_save_csv(lt_res.drop(lc_centroid), lv_dd+lv_tipo);
 		
 		Dataset<Row> lt_count;
+			
 		
-		/*lt_count = lt_res.groupBy(gc_ts)
-	                     .pivot(lv_pivot)						 
-	                     .sum(gc_count)
-	                     .sort(col(gc_ts));
+		Dataset<Row> lt_ips_vit = lt_res.select(gc_resp_h)									
+									.filter(col(gc_prediction).equalTo("1"))
+									.distinct();
+				
+		Dataset<Row> lt_ips_att = lt_res.select(gc_orig_h)									
+										.filter(col(gc_prediction).equalTo("1"))
+										.distinct();
 		
-		cl_util.m_save_csv(lt_count, lv_dd+lv_tipo+"_PIVOT_M");*/
+		m_export_ipinfo(lt_res.drop(lc_centroid), lt_ips_att, lv_dd+lv_tipo);
 		
-		lt_count = lt_res.withColumn(gc_ts, date_format(col(gc_ts), lc_format))
+		cl_util.m_show_dataset(lt_ips_att, "ORIG_H Atta: ");
+		
+		cl_util.m_show_dataset(lt_ips_vit, "RESP_H Vitimas: ");
+		
+		Dataset<Row> lt_vit = lt_res.join(lt_ips_vit,gc_resp_h); //Faz o PIVOT apenas com historico dos IPS vitimas
+		
+		cl_util.m_show_dataset(lt_vit, "RESP_H(Vitimas) Filtrado : ");
+		
+		lt_count = lt_vit.groupBy(gc_ts)
+						 .pivot(lv_pivot)
+						 .sum(gc_count)
+						 .sort(col(gc_ts));
+
+		cl_util.m_save_csv(lt_count, lv_dd + lv_tipo + "_PIVOT_M");
+				
+		lt_count = lt_vit.withColumn(gc_ts, date_format(col(gc_ts), lc_format))
 				         .groupBy(gc_ts)
 				         .pivot(lv_pivot)						 
                          .sum(gc_count)
                          .sort(col(gc_ts));
 
 		cl_util.m_save_csv(lt_count, lv_dd+lv_tipo+"_PIVOT_H");	
+				
+	}
+	
+	public void m_export_ipinfo(Dataset<Row> lt_data, Dataset<Row> lt_ips, String lv_descr) {
 		
+		Dataset<Row> lt_filt;
+		
+		cl_pesquisa_ip lo_ip = new cl_pesquisa_ip(cl_main.gv_session, gv_stamp);
+		
+		if( cl_main.gv_submit == 1) { //Local Web Service
+			
+			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_orig_h, 1000); //Consulta no WebService
+			
+		}else { //Cluster WebService
+			
+			lt_filt = lo_ip.m_processa_ip(lt_data, cl_kmeans.gc_orig_h, 0);//Consulta no HBase
+			
+			//cl_util.m_show_dataset(lt_filt, lc_resp_h+" com IpInfo: ");
+			
+			cl_util.m_save_csv(lt_filt, lv_descr);
+			
+		}
 		
 	}
 	
