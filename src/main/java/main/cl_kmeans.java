@@ -81,11 +81,13 @@ public class cl_kmeans {
 		
 		Dataset<Row> lt_res;
 		
-		gv_tipo = lv_service; //Fazer filtro por PROTOCOLO TAMBÈM?
+		String lv_model = "/network/ufsm/model/KMEANS_DDOS_19_01_05/"+lv_service;
+		
+		gv_tipo = lv_service;
 		
 		lt_res = m_normaliza_analise_ddos(lt_data);
 		
-		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_ddos);
+		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_ddos, lv_model);
 		
 		//lt_res.unpersist();
 		
@@ -163,11 +165,13 @@ public class cl_kmeans {
 		
 		Dataset<Row> lt_res;
 		
+		String lv_model = "/network/ufsm/model/KMEANS_SCAN_19_01_06/"+lv_proto;
+		
 		gv_tipo = lv_proto; //Fazer filtro por PROTOCOLO TAMBÈM?
 		
 		lt_res = m_normaliza_analise_ScanPort(lt_data);
 		
-		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_scan);
+		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_scan, lv_model);
 		
 		lt_res.unpersist();
 		
@@ -177,7 +181,9 @@ public class cl_kmeans {
 		
 		Dataset<Row> lt_res;
 		
-		cl_util.m_time_start();				
+		cl_util.m_time_start();		
+		
+		String lc_format = "dd.MM.yyyy HH";
 		
 		//Query que agrupa todas as portas de Origem Por IP e Minuto
 		
@@ -197,7 +203,7 @@ public class cl_kmeans {
 				                 gc_resp_pkts,	
 				                 gc_resp_bytes )					   
 					   .filter(col(gc_proto).equalTo(gv_tipo))    					   
-					   .withColumn(gc_ts, date_format(col(gc_ts), gc_format))				   					  
+					   .withColumn(gc_ts, date_format(col(gc_ts), lc_format))//gc_format))				   					  
 					   .groupBy( col(gc_orig_h),
 							     col(gc_orig_p),
 							     col(gc_resp_h), 							      
@@ -256,7 +262,7 @@ public class cl_kmeans {
 		
 	}
 	
-	public void m_ddos_kmeans(Dataset<Row> lt_data, SparkSession lv_session, String lv_table) {
+	public void m_ddos_kmeans(Dataset<Row> lt_data, SparkSession lv_session, String lv_table, String lv_model) {
 		
 		final String lc_feat = "features";
 		
@@ -278,9 +284,12 @@ public class cl_kmeans {
 		Dataset<Row> lv_vector = lv_assembler.transform(lt_data);	
 		
 		 // Trains a k-means model.
-	    KMeans kmeans = new KMeans().setK(lv_k);//.setSeed(1L);
+	    /*KMeans kmeans = new KMeans().setK(lv_k);//.setSeed(1L);
 	    
 	    KMeansModel model = kmeans.fit(lv_vector);
+		*/
+		//Load MODEL from HDFS
+		KMeansModel model = KMeansModel.load(lv_model);
 	
 	    // Evaluate clustering by computing Within Set Sum of Squared Errors.
 	    double WSSSE = model.computeCost(lv_vector);
@@ -313,13 +322,10 @@ public class cl_kmeans {
 	    lt_res = lt_res.withColumn(lc_centroid, functions.lit(lv_centroid))
 	    			   .drop(lc_feat);
 	    
-	    //cl_util.m_save_csv(lt_res.drop(col(lc_centroid)), lv_table);
+	    //cl_util.m_show_dataset(lt_res, gv_tipo + lv_table);
 	    
-	    //cl_util.m_save_json(lt_res, "DDoS-Kmeansdrop");
-	    
-	    //cl_util.m_show_dataset(lt_res, gv_tipo+lv_table);
-	    
-	    String lv_path = "/network/ufsm/model/"+lv_table +"_GT_09_12/"+gv_tipo;
+	    	    
+	   /* String lv_path = "/network/ufsm/model/"+lv_table +"_19_01_06/"+gv_tipo;
 	    
 	    System.out.println("\n Direotiro do MODEL: "+lv_path);
 	    
@@ -338,9 +344,9 @@ public class cl_kmeans {
 			
 			e1.printStackTrace();
 			
-		}
+		}*/
 			    
-	    //cl_util.m_save_log(lt_res, lv_table);    
+	    cl_util.m_save_log(lt_res, lv_table);    
 	    	    
 	    cl_util.m_time_end();
 	    	    	    
@@ -354,7 +360,7 @@ public class cl_kmeans {
 				
 		//m_export_process(lt_data, gc_orig_h, gc_service, cl_main.gc_ssl, lv_dd);
 		
-		m_export_process(lt_data, gc_orig_h, gc_service, cl_main.gc_ssh, lv_dd);
+		m_export_process(lt_data, gc_resp_h, gc_service, cl_main.gc_ssh, lv_dd);
 		
 	}
 	
@@ -362,9 +368,9 @@ public class cl_kmeans {
 		
 		String lv_dd = "Scan_";
 		
-		m_export_process(lt_data, gc_orig_h, gc_proto, cl_main.gc_tcp, lv_dd); //São muitos IPs para gerar o fluxo por tempo
+		m_export_process(lt_data, gc_resp_h, gc_proto, cl_main.gc_tcp, lv_dd); //São muitos IPs para gerar o fluxo por tempo
 		
-		m_export_process(lt_data, gc_orig_h, gc_proto, cl_main.gc_udp, lv_dd);
+		m_export_process(lt_data, gc_resp_h, gc_proto, cl_main.gc_udp, lv_dd);
 				
 	}
 	
@@ -425,7 +431,7 @@ public class cl_kmeans {
 		
 		cl_pesquisa_ip lo_ip = new cl_pesquisa_ip(cl_main.gv_session, gv_stamp);
 		
-		if( cl_main.gv_submit == 1) { //Local Web Service
+		if( cl_main.gv_submit == 0) { //Local Web Service
 			
 			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_orig_h, 1000); //Consulta no WebService
 			

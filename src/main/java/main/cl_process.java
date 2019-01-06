@@ -409,7 +409,7 @@ public class cl_process{
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h))
 				  				  .sort(gc_ts, gc_proto, gc_service, gc_orig_h), lc_p_s_orig_h);
 		
-		m_export_pivot(lt_data, gc_orig_h, gc_service, cl_main.gc_http, lc_p_s_orig_h); //Historico por TS da utilização de HTTP por IP
+		//m_export_pivot(lt_data, gc_orig_h, gc_service, cl_main.gc_http, lc_p_s_orig_h); //Historico por TS da utilização de HTTP por IP
 		
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_p))
@@ -529,8 +529,7 @@ public class cl_process{
                          .sort(col(gc_ts));
 
 		cl_util.m_save_csv(lt_count, lv_dd + "_" + lv_tipo + "_PIVOT_D");	
-		
-		
+				
 		
 	}
 	

@@ -65,7 +65,7 @@ public class cl_pesquisa_ip {
 		go_select.m_conf_phoenix(gc_table, gv_session);
 		
 		int lv_free = go_select.m_Limit_IpInfo(); //Verifica limite diario
-		lv_free = 1000;
+		//lv_free = 1000;
 		System.out.println("\nConsultas disponiveis no dia: " + lv_free);
 		
 		cl_util.m_show_dataset(lt_data, "Dados a consultar: ");		
