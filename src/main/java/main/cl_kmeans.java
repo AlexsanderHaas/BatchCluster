@@ -173,7 +173,7 @@ public class cl_kmeans {
 		
 		m_ddos_kmeans(lt_res, lv_session, cl_main.gc_kmeans_scan, lv_model);
 		
-		lt_res.unpersist();
+		//lt_res.unpersist();
 		
 	}
 	
@@ -233,7 +233,7 @@ public class cl_kmeans {
 		lt_res = lt_res.withColumn(gc_ts_filtro, functions.lit(gv_stamp_filtro))						   
 			           .withColumn(gc_ts_code, functions.lit(gv_stamp))
 			           .withColumn(gc_rowid, functions.monotonically_increasing_id())
-			           .withColumn(gc_ts, to_timestamp(col(gc_ts),gc_format)); //para salvar no banco coloca em timestamp novamente
+			           .withColumn(gc_ts, to_timestamp(col(gc_ts),lc_format)); //para salvar no banco coloca em timestamp novamente
 		
 		cl_util.m_show_dataset(lt_res, "1) Normaliza Scan Port");									
 		

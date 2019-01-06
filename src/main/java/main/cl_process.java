@@ -381,7 +381,7 @@ public class cl_process{
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto))
 								  .sort(gc_ts), lc_proto);
 		
-		m_export_pivot(lt_data, gc_proto, "", "", lc_proto); //Historico por TS da utilização de Protocolo
+		m_export_pivot(lt_data, gc_proto, gc_tipo, lc_proto, lc_proto); //Historico por TS da utilização de Protocolo
 		
 		/*cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_orig_h))
 								  .sort(gc_ts, gc_proto, gc_orig_h), lc_proto_orig_h);
@@ -403,7 +403,7 @@ public class cl_process{
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_proto_service))
 								  .sort(gc_ts, gc_proto, gc_service), lc_proto_service);
 		
-		m_export_pivot(lt_data, gc_service, "", "", lc_proto_service); //Historico por TS da utilização de Service
+		m_export_pivot(lt_data, gc_service, gc_tipo, lc_proto_service, lc_proto_service); //Historico por TS da utilização de Service
 		
 		
 		cl_util.m_save_csv(lt_data.filter(col(gc_tipo).equalTo(lc_p_s_orig_h))
