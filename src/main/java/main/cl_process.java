@@ -533,4 +533,42 @@ public class cl_process{
 		
 	}
 	
+	public void m_search_orig_h(Dataset<Row> lt_data) {
+		
+		Dataset<Row> lt_filt;
+		
+		lt_filt = lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_resp_h))//(lc_resp_h))
+					.filter(col(gc_resp_h).like("200.18."));
+					//.sort(gc_ts, gc_orig_h);
+					     //.persist(StorageLevel.MEMORY_AND_DISK());
+			
+		//cl_util.m_save_csv(lt_filt, lc_resp_h);
+
+		cl_pesquisa_ip lo_ip = new cl_pesquisa_ip(cl_main.gv_session, gv_stamp);
+
+		Dataset<Row> lt_ips;
+		
+		lt_ips = lt_filt.select(gc_orig_h, gc_count)
+					    .groupBy(gc_orig_h)
+					    .sum(gc_count)
+					    .withColumnRenamed("sum(count)", gc_count)
+					    .sort(col(gc_count).desc())
+					    .persist(StorageLevel.MEMORY_AND_DISK());
+		
+		if( cl_main.gv_submit == 0) { //Local Web Service
+			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_resp_h, 5); //Consulta no WebService
+		}else { //Cluster WebService
+			
+			lt_filt = lo_ip.m_processa_ip(lt_filt, cl_kmeans.gc_resp_h, 0);//Consulta no HBase
+			
+			//cl_util.m_show_dataset(lt_filt, lc_resp_h+" com IpInfo: ");
+			
+			cl_util.m_save_csv(lt_filt.sort(col(gc_count).desc()), lc_orig_h_resp_h+"_INFO_WEB");
+			
+		}
+		
+		lt_filt.unpersist();
+		
+	}
+	
 }
