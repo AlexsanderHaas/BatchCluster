@@ -185,7 +185,7 @@ public class cl_pesquisa_ip {
 	
 	public void m_search_WebService(Dataset<Row> lt_data){
 
-		final String lc_token = "fe0c548f2e32c5";//"dc695e943d23f0"; 
+		final String lc_token = "dc695e943d23f0"; //"fe0c548f2e32c5";//
 		
 		Dataset<Row> lt_res;
 		
@@ -205,31 +205,31 @@ public class cl_pesquisa_ip {
 			
 			try {
 				response = ipInfo.lookupIP(row.getString(0));
+								
+				// System.out.println("ALL:"+response.toString());
+
+				lo_ip.setIp(row.getString(0));
+
+				lo_ip.setHostname(response.getHostname());
+
+				lo_ip.setCity(response.getCity());
+
+				lo_ip.setRegion(response.getRegion());
+
+				lo_ip.setCountry(response.getCountryCode());
+
+				lo_ip.setOrg(response.getOrg());
+
+				if (response.getLatitude() != null) {
+					lo_ip.setLatitude(Double.parseDouble(response.getLatitude()));
+				}
+
+				if (response.getLongitude() != null) {
+					lo_ip.setLongitude(Double.parseDouble(response.getLongitude()));
+				}
 			} catch (Exception e) {
 				System.out.println("Erro Web Service: "+e);
-			}					
-			   
-	        //System.out.println("ALL:"+response.toString());		
-	        
-	        lo_ip.setIp(row.getString(0));
-	        
-	        lo_ip.setHostname(response.getHostname());
-            
-	        lo_ip.setCity(response.getCity());
-            
-	        lo_ip.setRegion(response.getRegion());
-            
-            lo_ip.setCountry(response.getCountryCode());
-            
-            lo_ip.setOrg(response.getOrg());
-            
-            if(response.getLatitude() != null) {            	
-            	lo_ip.setLatitude(Double.parseDouble(response.getLatitude()));
-            }
-            
-            if(response.getLongitude() != null) {            	
-            	lo_ip.setLongitude(Double.parseDouble(response.getLongitude()));
-            }           
+			}
             					
 			return lo_ip;
 	

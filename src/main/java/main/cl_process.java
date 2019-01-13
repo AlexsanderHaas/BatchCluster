@@ -538,10 +538,10 @@ public class cl_process{
 		Dataset<Row> lt_filt;
 		
 		lt_filt = lt_data.filter(col(gc_tipo).equalTo(lc_orig_h_resp_h))//(lc_resp_h))
-					.filter(col(gc_resp_h).like("200.18."));
+					.filter(col(gc_resp_h).like("200.18.%"));
 					//.sort(gc_ts, gc_orig_h);
 					     //.persist(StorageLevel.MEMORY_AND_DISK());
-			
+		cl_util.m_show_dataset(lt_filt, "ORIIIIIIIIIIIG_H ");	
 		//cl_util.m_save_csv(lt_filt, lc_resp_h);
 
 		cl_pesquisa_ip lo_ip = new cl_pesquisa_ip(cl_main.gv_session, gv_stamp);
@@ -556,10 +556,10 @@ public class cl_process{
 					    .persist(StorageLevel.MEMORY_AND_DISK());
 		
 		if( cl_main.gv_submit == 0) { //Local Web Service
-			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_resp_h, 5); //Consulta no WebService
+			lo_ip.m_processa_ip(lt_ips.limit(10000), cl_kmeans.gc_orig_h, 1000); //Consulta no WebService
 		}else { //Cluster WebService
 			
-			lt_filt = lo_ip.m_processa_ip(lt_filt, cl_kmeans.gc_resp_h, 0);//Consulta no HBase
+			lt_filt = lo_ip.m_processa_ip(lt_filt, cl_kmeans.gc_orig_h, 0);//Consulta no HBase
 			
 			//cl_util.m_show_dataset(lt_filt, lc_resp_h+" com IpInfo: ");
 			

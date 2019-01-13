@@ -104,11 +104,12 @@ public class cl_main {
 			}
 			
 			break;
+			
 		case 3:
 			
-			Dataset<Row> lt_ips;
+			Dataset<Row> lt_ipso;
 			
-			String lv_stamps = "2019-01-01 13:00:00.000";
+			String lv_stampso = "2019-01-01 13:00:00.000";
 			
 			//String lc_format = "dd/MM/yyyy HH:mm";
 						
@@ -116,13 +117,13 @@ public class cl_main {
 			
 			go_select.m_conf_phoenix(gc_totais, gv_session);
 			
-			lt_ips = go_select.m_select_LogTotais(lv_stamps);
+			lt_ipso = go_select.m_select_LogTotais(lv_stampso);
 			
 			//###########################################
 			//IpInfo
 			//###########################################
 			
-			go_processa.m_search_orig_h(lt_ips);// Com o IpInfo
+			go_processa.m_search_orig_h(lt_ipso);// Com o IpInfo
 			
 			cl_util.m_time_end();
 			

@@ -237,7 +237,8 @@ public class cl_seleciona {
 			      .format(gc_phoenix)
 			      .options(gv_phoenix)							   
 			      .load()			      			      
-				  .filter(col(gc_tsc).gt(lv_stamp))						  
+				  .filter(col(gc_tsc).gt(lv_stamp))
+				  .filter(col("TIPO").equalTo(cl_process.lc_orig_h_resp_h))			  
 				  .persist(StorageLevel.MEMORY_AND_DISK());				  
 				  //.filter(col("TIPO").equalTo(cl_process.lc_p_s_resp_h));
 				  //.filter(col("TIPO").equalTo("RESP_H")).limit(1000)

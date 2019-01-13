@@ -17,9 +17,9 @@ public class cl_util {
 			
 			System.out.println("\n" + lv_desc + "\t" + lt_data.count());
 						
-			//lt_data.printSchema();
+			lt_data.printSchema();
 			
-			//lt_data.show(5);
+			lt_data.show(5);
 			
 		} catch (Exception e) {
 			System.out.println("\nProblema: Classe CL_UTIL Método SHOW_DATASET. Chamada do método:" + lv_desc + "\t" + e);
